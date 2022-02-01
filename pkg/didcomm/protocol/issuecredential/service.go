@@ -660,6 +660,8 @@ func (s *Service) saveTransitionalPayload(id string, data *transitionalPayload) 
 		return fmt.Errorf("marshal transitional payload: %w", err)
 	}
 
+	logger.Infof("saving transitional payload under ID='%s'", id)
+
 	return s.store.Put(fmt.Sprintf(transitionalPayloadKey, id), src, storage.Tag{Name: transitionalPayloadKey})
 }
 
@@ -678,6 +680,8 @@ func canTriggerActionEvents(msg service.DIDCommMsg) bool {
 }
 
 func (s *Service) getTransitionalPayload(id string) (*transitionalPayload, error) {
+	logger.Infof("query transitional payload for ID='%s'", id)
+
 	src, err := s.store.Get(fmt.Sprintf(transitionalPayloadKey, id))
 	if err != nil {
 		return nil, fmt.Errorf("store get: %w", err)
