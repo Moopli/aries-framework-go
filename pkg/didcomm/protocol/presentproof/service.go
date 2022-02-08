@@ -430,6 +430,8 @@ func (s *Service) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string)
 		return "", fmt.Errorf("failed to obtain the message's threadID : %w", err)
 	}
 
+	logger.Warnf("metaData piID: %s", md.PIID)
+
 	// if no action event is triggered, continue the execution
 	return thid, s.handle(md)
 }
@@ -683,6 +685,8 @@ func getDIDVersion(v string) service.Version {
 }
 
 func (s *Service) saveTransitionalPayload(id string, data *transitionalPayload) error {
+	logger.Warnf("Saving transitional payload under key: %s", id)
+
 	src, err := json.Marshal(*data)
 	if err != nil {
 		return fmt.Errorf("marshal transitional payload: %w", err)
@@ -704,6 +708,8 @@ func canTriggerActionEvents(msg service.DIDCommMsg) bool {
 }
 
 func (s *Service) getTransitionalPayload(id string) (*transitionalPayload, error) {
+	logger.Warnf("Getting transitional payload with key: %s", id)
+
 	src, err := s.store.Get(fmt.Sprintf(transitionalPayloadKey, id))
 	if err != nil {
 		return nil, fmt.Errorf("store get: %w", err)
