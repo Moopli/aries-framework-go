@@ -450,7 +450,7 @@ func (s *Service) getCurrentInternalDataAndPIID(msg service.DIDCommMsgMap) (stri
 		protocolVersion = version2
 	}
 
-	piID, err := getPIID(msg)
+	piID, err := msg.ThreadID()
 	if errors.Is(err, service.ErrThreadIDNotFound) {
 		msg.SetID(uuid.New().String(), service.WithVersion(getDIDVersion(getVersion(msg.Type()))))
 
@@ -564,14 +564,6 @@ func (s *Service) handle(md *metaData) error {
 	}
 
 	return nil
-}
-
-func getPIID(msg service.DIDCommMsg) (string, error) {
-	if pthID := msg.ParentThreadID(); pthID != "" {
-		return pthID, nil
-	}
-
-	return msg.ThreadID()
 }
 
 type internalData struct {
