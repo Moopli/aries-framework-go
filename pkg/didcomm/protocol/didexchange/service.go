@@ -554,7 +554,7 @@ func (s *Service) SaveInvitation(i *OOBInvitation) error {
 		return fmt.Errorf("failed to save oob invitation : %w", err)
 	}
 
-	logger.Debugf("saved invitation: %+v", i)
+	logger.Debugf("saved invitation: %#v", i)
 
 	return nil
 }
@@ -936,6 +936,7 @@ func (s *Service) CreateImplicitInvitation(inviterLabel, inviterDID,
 		RecipientKeys:   dest.RecipientKeys,
 		TheirLabel:      inviterLabel,
 		Namespace:       findNamespace(InvitationMsgType),
+		DIDCommVersion:  service.V1,
 	}
 
 	if e := s.connectionRecorder.SaveConnectionRecordWithMappings(connRecord); e != nil {

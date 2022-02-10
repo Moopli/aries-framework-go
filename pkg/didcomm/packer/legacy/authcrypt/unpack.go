@@ -81,6 +81,8 @@ func getCEK(recipients []recipient, km kms.KeyManager) (*keys, error) {
 		candidateKeys = append(candidateKeys, candidate.Header.KID)
 	}
 
+	fmt.Printf("getCEK looking through candidate keys: %#v\n", candidateKeys)
+
 	recKeyIdx, err := findVerKey(km, candidateKeys)
 	if err != nil {
 		return nil, fmt.Errorf("getCEK: no key accessible %w", err)

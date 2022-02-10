@@ -17,6 +17,7 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/common/log"
 	"github.com/hyperledger/aries-framework-go/pkg/crypto"
 	didcomm "github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
+	"github.com/hyperledger/aries-framework-go/pkg/didcomm/transport"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/did"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/jose"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/util/jwkkid"
@@ -39,6 +40,7 @@ type DIDCommMessageMiddleware struct {
 	connStore         *connection.Recorder
 	didStore          didstore.ConnectionStore
 	mediaTypeProfiles []string
+	hasV2MTP          bool
 }
 
 type provider interface {
@@ -58,12 +60,23 @@ func New(p provider) (*DIDCommMessageMiddleware, error) {
 		return nil, fmt.Errorf("failed to initialize connection recorder: %w", err)
 	}
 
+	hasV2MTP := false
+
+	mtps := p.MediaTypeProfiles()
+	for _, mtp := range mtps {
+		if mtp == transport.MediaTypeDIDCommV2Profile {
+			hasV2MTP = true
+			break
+		}
+	}
+
 	return &DIDCommMessageMiddleware{
 		kms:               p.KMS(),
 		crypto:            p.Crypto(),
 		vdr:               p.VDRegistry(),
 		connStore:         connRecorder,
-		mediaTypeProfiles: p.MediaTypeProfiles(),
+		mediaTypeProfiles: mtps,
+		hasV2MTP:          hasV2MTP,
 		didStore:          p.DIDConnectionStore(),
 	}, nil
 }
@@ -170,6 +183,9 @@ func (h *DIDCommMessageMiddleware) HandleOutboundMessage(msg didcomm.DIDCommMsgM
 
 type invitationStub struct {
 	Type string `json:"type"`
+	Body struct {
+		Accept []string `json:"accept"`
+	} `json:"body"`
 }
 
 func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(senderDID, recipientDID string,
@@ -195,13 +211,18 @@ func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(senderDID, 
 	}
 
 	rec, err := h.connStore.GetConnectionRecordByDIDs(recipientDID, senderDID)
-	if !errors.Is(err, storage.ErrDataNotFound) {
-		// either an error, or a record exists
-		logger.Warnf("record present, or error=%v", err)
-		return rec, err
+	if err == nil {
+		return rec, nil
+	} else if !errors.Is(err, storage.ErrDataNotFound) {
+		return nil, err
 	}
 
 	// if we created an invitation with this DID, and have no connection, we create a connection.
+
+	mtps := h.mediaTypeProfiles
+	if h.hasV2MTP {
+		mtps = []string{transport.MediaTypeDIDCommV2Profile}
+	}
 
 	rec = &connection.Record{
 		ConnectionID:      uuid.New().String(),
@@ -209,7 +230,7 @@ func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(senderDID, 
 		TheirDID:          senderDID,
 		State:             connection.StateNameCompleted,
 		Namespace:         connection.MyNSPrefix,
-		MediaTypeProfiles: h.mediaTypeProfiles,
+		MediaTypeProfiles: mtps,
 		DIDCommVersion:    didcomm.V2,
 	}
 

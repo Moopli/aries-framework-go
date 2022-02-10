@@ -602,7 +602,14 @@ func (s *Service) SaveInvitation(i *Invitation) error {
 		return fmt.Errorf("failed to save oob invitation : %w", err)
 	}
 
-	logger.Debugf("saved invitation: %+v", i)
+	logger.Debugf("saved invitation: %#v", i)
+
+	targetBytes, err := json.Marshal(target)
+	if err != nil {
+		return fmt.Errorf("marshal target: %w", err)
+	}
+
+	logger.Debugf("chosen target: %s", string(targetBytes))
 
 	err = s.didSvc.SaveInvitation(&didexchange.OOBInvitation{
 		ID:                uuid.New().String(),

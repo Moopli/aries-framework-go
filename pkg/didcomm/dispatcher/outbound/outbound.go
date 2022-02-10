@@ -162,6 +162,21 @@ func (o *Dispatcher) SendToDID(msg interface{}, myDID, theirDID string) error { 
 		copy(dest.MediaTypeProfiles, connRec.MediaTypeProfiles)
 	}
 
+	if connRec.DIDCommVersion == service.V2 {
+		dest.MediaTypeProfiles = []string{transport.MediaTypeDIDCommV2Profile}
+	} else {
+		// exclude didcomm/v2
+		mtps := []string{}
+
+		for _, mtp := range dest.MediaTypeProfiles {
+			if mtp != transport.MediaTypeDIDCommV2Profile {
+				mtps = append(mtps, mtp)
+			}
+		}
+
+		dest.MediaTypeProfiles = mtps
+	}
+
 	mtp := o.mediaTypeProfile(dest)
 	switch mtp {
 	case transport.MediaTypeV1PlaintextPayload, transport.MediaTypeV1EncryptedEnvelope,
@@ -256,6 +271,8 @@ func (o *Dispatcher) Send(msg interface{}, senderKey string, des *service.Destin
 	}
 
 	mtp := o.mediaTypeProfile(des)
+
+	logger.Debugf("Sending message using mtp '%s' to destination: %#v", mtp, *des)
 
 	var fromKey []byte
 

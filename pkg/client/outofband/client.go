@@ -186,7 +186,11 @@ func (c *Client) CreateInvitation(services []interface{}, opts ...MessageOption)
 	}
 
 	if len(inv.Accept) == 0 {
-		inv.Accept = c.mediaTypeProfiles
+		for _, mtp := range c.mediaTypeProfiles {
+			if mtp != transport.MediaTypeDIDCommV2Profile {
+				inv.Accept = append(inv.Accept, mtp)
+			}
+		}
 	}
 
 	if len(inv.Services) == 0 {

@@ -361,6 +361,16 @@ func (ctx *context) createInvitedRequest(destination *service.Destination, label
 		},
 	}
 
+	mtps := []string{}
+
+	for _, mtp := range destination.MediaTypeProfiles {
+		if mtp != transport.MediaTypeDIDCommV2Profile {
+			mtps = append(mtps, mtp)
+		}
+	}
+
+	destination.MediaTypeProfiles = mtps
+
 	// get did document to use in exchange request
 	myDIDDoc, err := ctx.getMyDIDDoc(getPublicDID(options), getRouterConnections(options),
 		serviceTypeByMediaProfile(destination.MediaTypeProfiles))
@@ -394,6 +404,8 @@ func (ctx *context) createInvitedRequest(destination *service.Destination, label
 	}
 
 	return func() error {
+		logger.Debugf("Sending didex request with my DID Doc: %#v", requestDidDoc)
+		logger.Debugf("Sender key: %s", senderKey)
 		return ctx.outboundDispatcher.Send(request, senderKey, destination)
 	}, connRec, nil
 }
@@ -444,6 +456,16 @@ func (ctx *context) handleInboundRequest(request *Request, options *options,
 	if err != nil {
 		return nil, nil, err
 	}
+
+	mtps := []string{}
+
+	for _, mtp := range destination.MediaTypeProfiles {
+		if mtp != transport.MediaTypeDIDCommV2Profile {
+			mtps = append(mtps, mtp)
+		}
+	}
+
+	destination.MediaTypeProfiles = mtps
 
 	var serviceType string
 	if len(requestDidDoc.Service) > 0 {
@@ -656,6 +678,7 @@ func (ctx *context) getMyDIDDoc(pubDID string, routerConnections []string, servi
 	}
 
 	logger.Debugf("creating new '%s' did for connection", didMethod)
+	logger.Debugf("DID uses serviceType: %s", serviceType)
 
 	var (
 		services   []did.Service
@@ -669,7 +692,11 @@ func (ctx *context) getMyDIDDoc(pubDID string, routerConnections []string, servi
 			return nil, fmt.Errorf("did doc - fetch router config: %w", err)
 		}
 
-		services = append(services, did.Service{ServiceEndpoint: serviceEndpoint, RoutingKeys: routingKeys})
+		services = append(services, did.Service{
+			Type:            serviceType,
+			ServiceEndpoint: serviceEndpoint,
+			RoutingKeys:     routingKeys,
+		})
 	}
 
 	if len(services) == 0 {
@@ -700,6 +727,8 @@ func (ctx *context) getMyDIDDoc(pubDID string, routerConnections []string, servi
 			newDID.Service[0].RecipientKeys = recKeys
 		}
 	}
+
+	logger.Debugf("Template Doc: %#v", newDID)
 
 	// by default use peer did
 	docResolution, err := ctx.vdRegistry.Create(didMethod, newDID)
@@ -856,6 +885,16 @@ func (ctx *context) handleInboundResponse(response *Response) (stateAction, *con
 	if err != nil {
 		return nil, nil, fmt.Errorf("prepare destination from response did doc: %w", err)
 	}
+
+	mtps := []string{}
+
+	for _, mtp := range destination.MediaTypeProfiles {
+		if mtp != transport.MediaTypeDIDCommV2Profile {
+			mtps = append(mtps, mtp)
+		}
+	}
+
+	destination.MediaTypeProfiles = mtps
 
 	docResolution, err := ctx.vdRegistry.Resolve(connRecord.MyDID)
 	if err != nil {

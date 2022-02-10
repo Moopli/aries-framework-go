@@ -61,7 +61,7 @@ type Service struct {
 	service.Action
 	service.Message
 	vdrRegistry            vdrapi.Registry
-	callbackChannel        chan *callback
+	callbackChannel        chan *callback // TODO: cleanup, never used
 	transientStore         storage.Store
 	connectionRecorder     *connection.Recorder
 	inboundHandler         func() service.InboundHandler
@@ -164,7 +164,7 @@ func (s *Service) Initialize(prov interface{}) error { // nolint:funlen
 	s.keyType = p.KeyType()
 	s.keyAgreementType = p.KeyAgreementType()
 	s.allServices = p.AllServices()
-	s.listenerFunc = listener(s.callbackChannel, s.handleCallback)
+	s.listenerFunc = listener(s.callbackChannel, s.handleCallback) // TODO: cleanup, never used
 	s.routeSvc = routeSvc
 
 	go s.listenerFunc()
@@ -239,15 +239,6 @@ func (s *Service) AcceptInvitation(i *Invitation, opts ...AcceptOption) (string,
 		return "", fmt.Errorf("oob/2.0 does not have from field")
 	}
 
-	clbk := &callback{
-		msg: msg,
-	}
-
-	err = s.handleCallback(clbk)
-	if err != nil {
-		return "", fmt.Errorf("oob/2.0 failed to accept invitation : %w", err)
-	}
-
 	newDID := &did.Doc{}
 
 	err = s.createNewKeyAndVM(newDID)
@@ -303,9 +294,6 @@ func (s *Service) AcceptInvitation(i *Invitation, opts ...AcceptOption) (string,
 			" no target service triggered", serviceURL)
 	}
 
-	logger.Debugf("oob/2.0 request body or Goal code is empty, oobv2.AcceptInvitation() is done but no" +
-		"target service triggered, generating a new peer DID for the first valid attachment and return it")
-
 	senderDoc, err := s.vdrRegistry.Resolve(i.From)
 	if err != nil {
 		return "", fmt.Errorf("oob/2.0 failed to resolve inviter DID: %w", err)
@@ -345,7 +333,7 @@ func (s *Service) AcceptInvitation(i *Invitation, opts ...AcceptOption) (string,
 		TheirDID:            i.From,
 		MyDID:               myDID.DIDDocument.ID,
 		Namespace:           connection.MyNSPrefix,
-		MediaTypeProfiles:   s.myMediaTypeProfiles,
+		MediaTypeProfiles:   intersect(s.myMediaTypeProfiles, i.Body.Accept),
 		Implicit:            true,
 		InvitationDID:       myDID.DIDDocument.ID,
 		DIDCommVersion:      service.V2,
@@ -600,6 +588,7 @@ func listener(
 	}
 }
 
+// TODO: cleanup, never used
 func (s *Service) handleCallback(c *callback) error {
 	switch c.msg.Type() {
 	case InvitationMsgType:
@@ -609,6 +598,7 @@ func (s *Service) handleCallback(c *callback) error {
 	}
 }
 
+// TODO: cleanup, never used
 func (s *Service) handleInvitationCallback(c *callback) error {
 	logger.Debugf("oob/2.0 input: %+v", c)
 
@@ -659,6 +649,21 @@ func matchMediaTypeProfiles(theirProfiles, myProfiles []string) bool {
 	}
 
 	return false
+}
+
+// intersect returns the intersection of two lists of strings, in the order of list1.
+func intersect(list1, list2 []string) []string {
+	set := list2set(list2)
+
+	out := []string{}
+
+	for _, s := range list1 {
+		if _, ok := set[s]; ok {
+			out = append(out, s)
+		}
+	}
+
+	return out
 }
 
 func list2set(list []string) map[string]struct{} {
