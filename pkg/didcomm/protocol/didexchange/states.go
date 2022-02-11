@@ -517,6 +517,7 @@ func (ctx *context) handleInboundRequest(request *Request, options *options,
 
 	// send exchange response
 	return func() error {
+		logger.Debugf("sending didex response")
 		return ctx.outboundDispatcher.Send(response, senderVerKey, destination)
 	}, connRec, nil
 }

@@ -280,6 +280,7 @@ func (o *Dispatcher) Send(msg interface{}, senderKey string, des *service.Destin
 		fromKey = []byte(senderKey)
 	}
 
+	// note to self: this packs for the *final* recipient, not the router - des.RecipientKeys *is* the final recipient's keys
 	packedMsg, err := o.packager.PackMessage(&transport.Envelope{
 		MediaTypeProfile: mtp,
 		Message:          req,
@@ -359,6 +360,7 @@ func (o *Dispatcher) createForwardMessage(msg []byte, des *service.Destination) 
 	}
 
 	if len(des.RoutingKeys) == 0 {
+		// no routing, no wrap (then why isn't this at the top?)
 		return msg, nil
 	}
 
@@ -375,6 +377,8 @@ func (o *Dispatcher) createForwardMessage(msg []byte, des *service.Destination) 
 	if err != nil {
 		return nil, fmt.Errorf("failed marshal to bytes: %w", err)
 	}
+
+	logger.Debugf("wrapped message into forward, senderKey='%s' destination=%#v", string(senderKey), des)
 
 	packedMsg, err := o.packager.PackMessage(&transport.Envelope{
 		MediaTypeProfile: mtProfile,

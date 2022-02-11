@@ -392,29 +392,43 @@ func (s *Service) handleInboundRequest(c *callback) error {
 		c.msg.ID(),
 		c.options,
 		s.endpoint,
-		func() (string, error) {
+		func() ([]string, error) {
+			keys := []string{}
+
+			supportsV2 := false
 			for _, mtp := range s.mediaTypeProfiles {
 				switch mtp {
 				case transport.MediaTypeDIDCommV2Profile, transport.MediaTypeAIP2RFC0587Profile:
-					_, pubKeyBytes, e := s.kms.CreateAndExportPubKeyBytes(s.keyAgreementType)
-					if e != nil {
-						return "", fmt.Errorf("outboundGrant from handleInboundRequest: kms failed to create "+
-							"and export %v key: %w", s.keyAgreementType, e)
-					}
-
-					return kmsdidkey.BuildDIDKeyByKeyType(pubKeyBytes, s.keyAgreementType)
+					supportsV2 = true
 				}
+			}
+
+			if supportsV2 {
+				_, pubKeyBytes, e := s.kms.CreateAndExportPubKeyBytes(s.keyAgreementType)
+				if e != nil {
+					return nil, fmt.Errorf("outboundGrant from handleInboundRequest: kms failed to create "+
+						"and export %v key: %w", s.keyAgreementType, e)
+				}
+
+				keyV2, err := kmsdidkey.BuildDIDKeyByKeyType(pubKeyBytes, s.keyAgreementType)
+				if err != nil {
+					return nil, err
+				}
+
+				keys = append(keys, keyV2)
 			}
 
 			_, pubKeyBytes, er := s.kms.CreateAndExportPubKeyBytes(kms.ED25519Type)
 			if er != nil {
-				return "", fmt.Errorf("outboundGrant from handleInboundRequest: kms failed to create and "+
+				return nil, fmt.Errorf("outboundGrant from handleInboundRequest: kms failed to create and "+
 					"export ED25519 key: %w", er)
 			}
 
 			didKey, _ := fingerprint.CreateDIDKey(pubKeyBytes)
 
-			return didKey, er
+			keys = append(keys, didKey)
+
+			return keys, er
 		},
 	)
 	if err != nil {
@@ -426,7 +440,7 @@ func (s *Service) handleInboundRequest(c *callback) error {
 
 func outboundGrant(
 	msgID string, opts *Options,
-	defaultEndpoint string, defaultKey func() (string, error)) (*Grant, error) {
+	defaultEndpoint string, defaultKey func() ([]string, error)) (*Grant, error) {
 	grant := &Grant{
 		ID:          msgID,
 		Type:        GrantMsgType,
@@ -444,7 +458,7 @@ func outboundGrant(
 			return nil, fmt.Errorf("outboundGrant: failed to create keys : %w", err)
 		}
 
-		grant.RoutingKeys = []string{keys}
+		grant.RoutingKeys = keys
 	}
 
 	logger.Debugf("outbound grant: %+v", grant)

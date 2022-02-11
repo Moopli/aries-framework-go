@@ -133,11 +133,21 @@ func (bp *Packager) prepareSenderAndRecipientKeys(cty string, envelope *transpor
 				return nil, nil, err
 			}
 
+			if marshalledKey == nil {
+				continue
+			}
+
 			recipients = append(recipients, marshalledKey)
 		case strings.Index(receiverKeyID, "#") > 0:
 			receiverKey, err := bp.resolveKeyAgreementFromDIDDoc(receiverKeyID)
 			if err != nil {
 				return nil, nil, fmt.Errorf("prepareSenderAndRecipientKeys: for recipient %d: %w", i+1, err)
+			}
+
+			if (receiverKey.Curve == "Ed25519") != isLegacy {
+				// If this key *is* a legacy key, but media type profile is *not* legacy, then skip the key.
+				// If this key is *not* a legacy key, but media type profile *is* legacy, then skip the key.
+				continue
 			}
 
 			if isLegacy {
@@ -207,6 +217,12 @@ func addDIDKeyToRecipients(i int, receiverKey string, isLegacy bool) ([]byte, er
 	if err != nil {
 		return nil, fmt.Errorf("prepareSenderAndRecipientKeys: failed to parse public key bytes from "+
 			"did:key verKey for recipient %d: %w", i+1, err)
+	}
+
+	if (recKey.Curve == "Ed25519") != isLegacy {
+		// If this key *is* a legacy key, but media type profile is *not* legacy, then skip the key.
+		// If this key is *not* a legacy key, but media type profile *is* legacy, then skip the key.
+		return nil, nil
 	}
 
 	if isLegacy {
