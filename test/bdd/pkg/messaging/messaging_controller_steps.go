@@ -253,7 +253,7 @@ func (d *ControllerSteps) findConnection(agentID string) (string, error) {
 	// call controller
 	var response didexchange.QueryConnectionsResponse
 
-	err := util.SendHTTP(http.MethodGet, destination+queryConnections+"?state=completed", nil, &response)
+	err := util.SendHTTP(http.MethodGet, destination+queryConnections, nil, &response)
 	if err != nil {
 		return "", fmt.Errorf("failed to query connections : %w", err)
 	}

@@ -16,7 +16,8 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/google/uuid"
 
-	didexClient "github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
+	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
+
 	issuecredentialclient "github.com/hyperledger/aries-framework-go/pkg/client/issuecredential"
 	"github.com/hyperledger/aries-framework-go/pkg/client/outofbandv2"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
@@ -147,7 +148,7 @@ func (i *IssuanceSDKDIDCommV2Steps) sendsProposalV3(holderName, issuerName strin
 		return err
 	}
 
-	i.context.DIDExchangeClients[holderName], err = didexClient.New(i.context.AgentCtx[holderName])
+	i.context.ConnectionClients[holderName], err = connection.New(i.context.AgentCtx[holderName])
 	if err != nil {
 		return err
 	}
@@ -158,12 +159,12 @@ func (i *IssuanceSDKDIDCommV2Steps) sendsProposalV3(holderName, issuerName strin
 		InvitationID: i.oobV2InviteFromIssuerToHolder.ID,
 	}
 
-	connection, err := i.getConnection(holderName, issuerName)
+	conn, err := i.getConnection(holderName, issuerName)
 	if err != nil {
 		return err
 	}
 
-	piid, err := i.issueCredentialClients[holderName].SendProposal(&proposeCredentialMsg, connection.Record)
+	piid, err := i.issueCredentialClients[holderName].SendProposal(&proposeCredentialMsg, conn)
 	if err != nil {
 		return fmt.Errorf("failed to send proposal: %w", err)
 	}
@@ -465,8 +466,8 @@ func (i *IssuanceSDKDIDCommV2Steps) getCredentialFulfillmentAttachment() (decora
 	}
 }
 
-func (i *IssuanceSDKDIDCommV2Steps) getConnection(from, to string) (*didexClient.Connection, error) {
-	connections, err := i.context.DIDExchangeClients[from].QueryConnections(&didexClient.QueryConnectionsParams{})
+func (i *IssuanceSDKDIDCommV2Steps) getConnection(from, to string) (*service.ConnectionRecord, error) {
+	connections, err := i.context.ConnectionClients[from].Query(&connection.QueryParams{})
 	if err != nil {
 		return nil, fmt.Errorf("%s failed to fetch their connections : %w", from, err)
 	}

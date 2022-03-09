@@ -17,7 +17,6 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/presentproof"
 	mocks "github.com/hyperledger/aries-framework-go/pkg/internal/gomocks/client/presentproof"
-	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 )
 
 const (
@@ -66,7 +65,7 @@ func TestClient_SendRequestPresentation(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID: uuid.New().String(),
 			MyDID:        Alice,
 			TheirDID:     Bob,
@@ -84,7 +83,7 @@ func TestClient_SendRequestPresentation(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID: uuid.New().String(),
 			MyDID:        Alice,
 			TheirDID:     Bob,
@@ -115,7 +114,7 @@ func TestClient_SendRequestPresentationV3(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID:   uuid.New().String(),
 			MyDID:          Alice,
 			TheirDID:       Bob,
@@ -134,7 +133,7 @@ func TestClient_SendRequestPresentationV3(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID:   uuid.New().String(),
 			MyDID:          Alice,
 			TheirDID:       Bob,
@@ -166,7 +165,7 @@ func TestClient_SendProposePresentation(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID: uuid.New().String(),
 			MyDID:        Alice,
 			TheirDID:     Bob,
@@ -184,7 +183,7 @@ func TestClient_SendProposePresentation(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID: uuid.New().String(),
 			MyDID:        Alice,
 			TheirDID:     Bob,
@@ -215,7 +214,7 @@ func TestClient_SendProposePresentationV3(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID:   uuid.New().String(),
 			MyDID:          Alice,
 			TheirDID:       Bob,
@@ -234,7 +233,7 @@ func TestClient_SendProposePresentationV3(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		conn := connection.Record{
+		conn := service.ConnectionRecord{
 			ConnectionID:   uuid.New().String(),
 			MyDID:          Alice,
 			TheirDID:       Bob,

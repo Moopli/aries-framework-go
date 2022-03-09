@@ -669,7 +669,11 @@ func (ctx *context) getMyDIDDoc(pubDID string, routerConnections []string, servi
 			return nil, fmt.Errorf("did doc - fetch router config: %w", err)
 		}
 
-		services = append(services, did.Service{ServiceEndpoint: serviceEndpoint, RoutingKeys: routingKeys})
+		services = append(services, did.Service{
+			Type:            serviceType,
+			ServiceEndpoint: serviceEndpoint,
+			RoutingKeys:     routingKeys,
+		})
 	}
 
 	if len(services) == 0 {
@@ -730,8 +734,7 @@ func (ctx *context) addRouterKeys(doc *did.Doc, routerConnections []string) erro
 		for _, ka := range doc.KeyAgreement {
 			for _, connID := range routerConnections {
 				// TODO https://github.com/hyperledger/aries-framework-go/issues/1105 Support to Add multiple
-				//  recKeys to the Router. (DIDComm V2 uses list of keyAgreements as router keys here, double check
-				//  if this issue can be closed).
+				//  recKeys to the Router.
 				kaID := ka.VerificationMethod.ID
 				if strings.HasPrefix(kaID, "#") {
 					kaID = doc.ID + kaID

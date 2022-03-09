@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/decorator"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/presentproof"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/verifiable"
-	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 )
 
 type (
@@ -113,7 +112,7 @@ func (c *Client) Actions() ([]Action, error) {
 // SendRequestPresentation is used by the Verifier to send a request presentation.
 // It returns the threadID of the new instance of the protocol.
 func (c *Client) SendRequestPresentation(
-	params *RequestPresentation, connRec *connection.Record) (string, error) {
+	params *RequestPresentation, connRec *service.ConnectionRecord) (string, error) {
 	if params == nil {
 		return "", errEmptyRequestPresentation
 	}
@@ -162,7 +161,7 @@ func (c *Client) DeclineRequestPresentation(piID, reason string) error {
 // SendProposePresentation is used by the Prover to send a propose presentation.
 // It returns the threadID of the new instance of the protocol.
 func (c *Client) SendProposePresentation(
-	params *ProposePresentation, connRec *connection.Record) (string, error) {
+	params *ProposePresentation, connRec *service.ConnectionRecord) (string, error) {
 	if params == nil {
 		return "", errEmptyProposePresentation
 	}

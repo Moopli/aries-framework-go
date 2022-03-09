@@ -69,18 +69,8 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 			"@type": "abc",
 		}
 
-		_, _, err := dr.handleInboundRotate(msg, "", "", nil)
+		_, _, err := dr.handleInboundRotate(msg, "", "")
 		require.NoError(t, err)
-
-		// invalid didcomm message
-		msg = service.DIDCommMsgMap{
-			"foo": "12345",
-			"bar": "abc",
-		}
-
-		err = dr.HandleInboundMessage(msg, "", "")
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "not a valid didcomm v1 or v2 message")
 	})
 
 	t.Run("bad from_prior", func(t *testing.T) {
@@ -94,7 +84,7 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 			"from_prior": []string{"abc", "def"},
 		}
 
-		_, _, err := dr.handleInboundRotate(msg, "", "", nil)
+		_, _, err := dr.handleInboundRotate(msg, "", "")
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "field should be a string")
 
@@ -106,7 +96,7 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 			"from_prior": "#$&@(*#^@(*#^",
 		}
 
-		_, _, err = dr.handleInboundRotate(msg, "", "", nil)
+		_, _, err = dr.handleInboundRotate(msg, "", "")
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "parsing DID rotation JWS")
 	})
@@ -115,12 +105,10 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 	senderDoc := createMockDoc(t, sender, myDID)
 	senderConnID := uuid.New().String()
 
-	e := sender.connStore.SaveConnectionRecord(&connection.Record{
+	e := sender.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 		ConnectionID: senderConnID,
-		State:        connection.StateNameCompleted,
 		TheirDID:     theirDID,
 		MyDID:        myDID,
-		Namespace:    connection.MyNSPrefix,
 	})
 	require.NoError(t, e)
 
@@ -142,7 +130,7 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 	t.Run("fail: can't rotate without prior connection", func(t *testing.T) {
 		recip := createBlankDIDRotator(t)
 
-		_, _, err := recip.handleInboundRotate(rotateMessage, newDID, theirDID, nil)
+		_, _, err := recip.handleInboundRotate(rotateMessage, newDID, theirDID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "inbound message cannot rotate without an existing prior connection")
 	})
@@ -160,7 +148,7 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 
 		recip.connStore = connStore
 
-		_, _, err = recip.handleInboundRotate(rotateMessage, newDID, theirDID, nil)
+		_, _, err = recip.handleInboundRotate(rotateMessage, newDID, theirDID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "looking up did rotation connection record")
 	})
@@ -168,16 +156,14 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 	t.Run("fail: from_prior JWS validation error", func(t *testing.T) {
 		recip := createBlankDIDRotator(t)
 
-		err := recip.connStore.SaveConnectionRecord(&connection.Record{
+		err := recip.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: senderConnID,
-			State:        connection.StateNameCompleted,
 			TheirDID:     myDID,
 			MyDID:        theirDID,
-			Namespace:    connection.MyNSPrefix,
 		})
 		require.NoError(t, err)
 
-		_, _, err = recip.handleInboundRotate(rotateMessage, newDID, theirDID, nil)
+		_, _, err = recip.handleInboundRotate(rotateMessage, newDID, theirDID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "'from_prior' validation")
 	})
@@ -185,13 +171,11 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 	t.Run("fail: recipient rotated, but received message addressed to wrong DID", func(t *testing.T) {
 		handler := createBlankDIDRotator(t)
 
-		connRec := &connection.Record{
+		connRec := &service.ConnectionRecord{
 			ConnectionID: uuid.New().String(),
-			State:        connection.StateNameCompleted,
 			TheirDID:     myDID,
 			MyDID:        theirDID,
-			Namespace:    connection.MyNSPrefix,
-			MyDIDRotation: &connection.DIDRotationRecord{
+			MyDIDRotation: &service.DIDRotationRecord{
 				OldDID:    "did:test:recipient-old",
 				NewDID:    theirDID,
 				FromPrior: "",
@@ -208,13 +192,11 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 
 		connID := uuid.New().String()
 
-		connRec := &connection.Record{
+		connRec := &service.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 			TheirDID:     myDID,
 			MyDID:        theirDID,
-			Namespace:    connection.MyNSPrefix,
-			MyDIDRotation: &connection.DIDRotationRecord{
+			MyDIDRotation: &service.DIDRotationRecord{
 				OldDID:    "did:test:recipient-old",
 				NewDID:    theirDID,
 				FromPrior: "",
@@ -235,7 +217,7 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 
 		mockStore.ErrPut = fmt.Errorf("store error")
 
-		err = recip.HandleInboundMessage(blankMessage, myDID, theirDID)
+		_, err = recip.HandleInboundMessage(blankMessage, myDID, theirDID, nil)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "updating connection")
 	})
@@ -243,7 +225,7 @@ func TestDIDCommMessageMiddleware_handleInboundRotate(t *testing.T) {
 	t.Run("success: pass-through, no rotation on either end", func(t *testing.T) {
 		recip := createBlankDIDRotator(t)
 
-		_, _, err := recip.handleInboundRotate(blankMessage, myDID, theirDID, nil)
+		_, _, err := recip.handleInboundRotate(blankMessage, myDID, theirDID)
 		require.NoError(t, err)
 	})
 }
@@ -258,7 +240,7 @@ func TestDIDRotator_HandleOutboundMessage(t *testing.T) {
 			"@type": "abc",
 		}
 
-		msgOut := dr.HandleOutboundMessage(msg, &connection.Record{})
+		msgOut := dr.HandleOutboundMessage(msg, &service.ConnectionRecord{})
 		require.Equal(t, msg, msgOut)
 
 		// invalid didcomm message
@@ -267,7 +249,7 @@ func TestDIDRotator_HandleOutboundMessage(t *testing.T) {
 			"bar": "abc",
 		}
 
-		msgOut = dr.HandleOutboundMessage(msg, &connection.Record{})
+		msgOut = dr.HandleOutboundMessage(msg, &service.ConnectionRecord{})
 		require.Equal(t, msg, msgOut)
 	})
 
@@ -280,21 +262,21 @@ func TestDIDRotator_HandleOutboundMessage(t *testing.T) {
 		}
 
 		// no change to message
-		msgOut := dr.HandleOutboundMessage(msg, &connection.Record{})
+		msgOut := dr.HandleOutboundMessage(msg, &service.ConnectionRecord{})
 		require.Equal(t, msg, msgOut)
 
 		// add from_prior to message
 		mockPrior := "mock prior data"
 
-		msgOut = dr.HandleOutboundMessage(msg, &connection.Record{
-			MyDIDRotation: &connection.DIDRotationRecord{FromPrior: mockPrior},
+		msgOut = dr.HandleOutboundMessage(msg, &service.ConnectionRecord{
+			MyDIDRotation: &service.DIDRotationRecord{FromPrior: mockPrior},
 		})
 		require.Equal(t, mockPrior, msgOut[fromPriorJSONKey])
 
 		mockPeerDIDState := "blah_blah_peer_DID_data"
 		mockDID := "did:test:abc"
 
-		msgOut = dr.HandleOutboundMessage(msg, &connection.Record{
+		msgOut = dr.HandleOutboundMessage(msg, &service.ConnectionRecord{
 			MyDID:               mockDID,
 			PeerDIDInitialState: mockPeerDIDState,
 		})
@@ -306,7 +288,7 @@ func TestHandleInboundAccept(t *testing.T) {
 	t.Run("skip:  failed to parse recipient DID", func(t *testing.T) {
 		h := createBlankDIDRotator(t)
 
-		rec, err := h.handleInboundInvitationAcceptance("", "")
+		rec, _, err := h.handleInboundInvitationAcceptance("", "")
 		require.NoError(t, err)
 		require.Nil(t, rec)
 	})
@@ -314,7 +296,7 @@ func TestHandleInboundAccept(t *testing.T) {
 	t.Run("skip: recipient DID is peer", func(t *testing.T) {
 		h := createBlankDIDRotator(t)
 
-		rec, err := h.handleInboundInvitationAcceptance("", "did:peer:abc")
+		rec, _, err := h.handleInboundInvitationAcceptance("", "did:peer:abc")
 		require.NoError(t, err)
 		require.Nil(t, rec)
 	})
@@ -322,7 +304,7 @@ func TestHandleInboundAccept(t *testing.T) {
 	t.Run("skip: we have no invitation for the DID they sent to", func(t *testing.T) {
 		h := createBlankDIDRotator(t)
 
-		rec, err := h.handleInboundInvitationAcceptance("", myDID)
+		rec, _, err := h.handleInboundInvitationAcceptance("", myDID)
 		require.NoError(t, err)
 		require.Nil(t, rec)
 	})
@@ -342,7 +324,7 @@ func TestHandleInboundAccept(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		rec, err := h.handleInboundInvitationAcceptance("", myDID)
+		rec, _, err := h.handleInboundInvitationAcceptance("", myDID)
 		require.Error(t, err)
 		require.Nil(t, rec)
 		require.ErrorIs(t, err, expectedErr)
@@ -368,7 +350,7 @@ func TestHandleInboundAccept(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		rec, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
+		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
 		require.Nil(t, rec)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to get connection record")
@@ -383,52 +365,16 @@ func TestHandleInboundAccept(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = h.connStore.SaveConnectionRecord(&connection.Record{
+		err = h.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: "conn-123",
-			State:        connection.StateNameCompleted,
 			TheirDID:     theirDID,
 			MyDID:        myDID,
-			Namespace:    connection.MyNSPrefix,
 		})
 		require.NoError(t, err)
 
-		rec, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
+		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
 		require.NoError(t, err)
 		require.NotNil(t, rec)
-	})
-
-	t.Run("fail: error creating connection record for new connection", func(t *testing.T) {
-		h := createBlankDIDRotator(t)
-
-		store := mockstorage.MockStore{
-			Store: map[string]mockstorage.DBEntry{},
-		}
-
-		var err error
-		h.connStore, err = connection.NewRecorder(&mockProvider{
-			storeProvider: mockstorage.NewCustomMockStoreProvider(&store),
-		})
-		require.NoError(t, err)
-
-		err = h.connStore.SaveOOBv2Invitation(myDID, invitationStub{
-			Type: oobV2Type,
-		})
-		require.NoError(t, err)
-
-		expectedErr := fmt.Errorf("store get error")
-
-		h.connStore, err = connection.NewRecorder(&mockProvider{
-			storeProvider: mockstorage.NewCustomMockStoreProvider(
-				&mockstorage.MockStore{
-					Store:  store.Store,
-					ErrPut: expectedErr,
-				}),
-		})
-		require.NoError(t, err)
-
-		_, err = h.handleInboundInvitationAcceptance(theirDID, myDID)
-		require.Error(t, err)
-		require.ErrorIs(t, err, expectedErr)
 	})
 
 	t.Run("fail: error creating connection record for new connection", func(t *testing.T) {
@@ -439,7 +385,7 @@ func TestHandleInboundAccept(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		rec, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
+		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
 		require.NoError(t, err)
 		require.NotNil(t, rec)
 
@@ -592,12 +538,10 @@ func TestDIDRotator_RotateConnectionDID(t *testing.T) {
 
 		connID := uuid.New().String()
 
-		err := dr.connStore.SaveConnectionRecord(&connection.Record{
+		err := dr.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 			TheirDID:     "did:test:them",
 			MyDID:        oldDID,
-			Namespace:    connection.MyNSPrefix,
 		})
 		require.NoError(t, err)
 
@@ -629,12 +573,10 @@ func TestDIDRotator_RotateConnectionDID(t *testing.T) {
 
 		connID := uuid.New().String()
 
-		err := dr.connStore.SaveConnectionRecord(&connection.Record{
+		err := dr.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 			TheirDID:     "did:test:them",
 			MyDID:        "did:test:me",
-			Namespace:    connection.MyNSPrefix,
 		})
 		require.NoError(t, err)
 
@@ -650,12 +592,10 @@ func TestDIDRotator_RotateConnectionDID(t *testing.T) {
 
 		drDID := "did:test:me"
 
-		err := dr.connStore.SaveConnectionRecord(&connection.Record{
+		err := dr.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 			TheirDID:     "did:test:them",
 			MyDID:        drDID,
-			Namespace:    connection.MyNSPrefix,
 		})
 		require.NoError(t, err)
 
@@ -672,12 +612,10 @@ func TestDIDRotator_RotateConnectionDID(t *testing.T) {
 
 		connID := uuid.New().String()
 
-		err := dr.connStore.SaveConnectionRecord(&connection.Record{
+		err := dr.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 			TheirDID:     "did:test:them",
 			MyDID:        oldDID,
-			Namespace:    connection.MyNSPrefix,
 		})
 		require.NoError(t, err)
 
@@ -708,12 +646,10 @@ func TestDIDRotator_RotateConnectionDID(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = dr.connStore.SaveConnectionRecord(&connection.Record{
+		err = dr.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 			TheirDID:     "did:test:them",
 			MyDID:        drDID,
-			Namespace:    connection.MyNSPrefix,
 		})
 		require.NoError(t, err)
 
@@ -839,23 +775,19 @@ func Test_RoundTrip(t *testing.T) {
 
 	myConnID := uuid.New().String()
 
-	err := me.connStore.SaveConnectionRecord(&connection.Record{
+	err := me.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 		ConnectionID: myConnID,
-		State:        connection.StateNameCompleted,
 		TheirDID:     theirDID,
 		MyDID:        oldDID,
-		Namespace:    connection.MyNSPrefix,
 	})
 	require.NoError(t, err)
 
 	theirConnID := uuid.New().String()
 
-	err = them.connStore.SaveConnectionRecord(&connection.Record{
+	err = them.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 		ConnectionID: theirConnID,
-		State:        connection.StateNameCompleted,
 		TheirDID:     oldDID,
 		MyDID:        theirDID,
-		Namespace:    connection.MyNSPrefix,
 	})
 	require.NoError(t, err)
 
@@ -1167,7 +1099,7 @@ func sendMessage(t *testing.T, sender, recipient *DIDCommMessageMiddleware, send
 
 	msg := sender.HandleOutboundMessage(msgTemplate, myConnRec)
 
-	err = recipient.HandleInboundMessage(msg, myConnRec.MyDID, myConnRec.TheirDID)
+	_, err = recipient.HandleInboundMessage(msg, myConnRec.MyDID, myConnRec.TheirDID, nil)
 	require.NoError(t, err)
 }
 

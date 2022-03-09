@@ -103,7 +103,7 @@ func (p *ProposeCredentialParams) UnmarshalJSON(b []byte) error {
 
 // FromDIDCommMsgMap implements service.MsgMapDecoder.
 func (p *ProposeCredentialParams) FromDIDCommMsgMap(msgMap service.DIDCommMsgMap) error {
-	isV2, _ := service.IsDIDCommV2(&msgMap) // nolint:errcheck
+	isV2 := service.IsDIDCommV2(&msgMap)
 	if isV2 {
 		proposeV3 := &ProposeCredentialV3{}
 
@@ -253,7 +253,7 @@ func (p *OfferCredentialParams) UnmarshalJSON(b []byte) error {
 
 // FromDIDCommMsgMap implements service.MsgMapDecoder.
 func (p *OfferCredentialParams) FromDIDCommMsgMap(msgMap service.DIDCommMsgMap) error {
-	isV2, _ := service.IsDIDCommV2(&msgMap) // nolint:errcheck
+	isV2 := service.IsDIDCommV2(&msgMap)
 	if isV2 {
 		msgV3 := &OfferCredentialV3{}
 
@@ -418,7 +418,7 @@ func (p *RequestCredentialParams) UnmarshalJSON(b []byte) error {
 
 // FromDIDCommMsgMap implements service.MsgMapDecoder.
 func (p *RequestCredentialParams) FromDIDCommMsgMap(msgMap service.DIDCommMsgMap) error {
-	isV2, _ := service.IsDIDCommV2(&msgMap) // nolint:errcheck
+	isV2 := service.IsDIDCommV2(&msgMap)
 	if isV2 {
 		msgV3 := &RequestCredentialV3{}
 
@@ -557,7 +557,7 @@ func (p *IssueCredentialParams) UnmarshalJSON(b []byte) error {
 
 // FromDIDCommMsgMap implements service.MsgMapDecoder.
 func (p *IssueCredentialParams) FromDIDCommMsgMap(msgMap service.DIDCommMsgMap) error {
-	isV2, _ := service.IsDIDCommV2(&msgMap) // nolint:errcheck
+	isV2 := service.IsDIDCommV2(&msgMap)
 	if isV2 {
 		msgV3 := &IssueCredentialV3{}
 

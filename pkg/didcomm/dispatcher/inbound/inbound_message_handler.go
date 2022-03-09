@@ -48,6 +48,7 @@ type MessageHandler struct {
 	messenger              service.InboundMessenger
 	vdr                    vdrapi.Registry
 	initialized            bool
+	supportedMTPs          []string
 }
 
 type provider interface {
@@ -59,6 +60,7 @@ type provider interface {
 	InboundMessenger() service.InboundMessenger
 	DIDRotator() *middleware.DIDCommMessageMiddleware
 	VDRegistry() vdrapi.Registry
+	MediaTypeProfiles() []string
 }
 
 // NewInboundMessageHandler creates an inbound message handler, that processes inbound message Envelopes,
@@ -84,6 +86,7 @@ func (handler *MessageHandler) Initialize(p provider) {
 	handler.messenger = p.InboundMessenger()
 	handler.didcommV2Handler = p.DIDRotator()
 	handler.vdr = p.VDRegistry()
+	handler.supportedMTPs = p.MediaTypeProfiles()
 
 	handler.initialized = true
 }
@@ -103,6 +106,10 @@ func (handler *MessageHandler) HandleInboundEnvelope(envelope *transport.Envelop
 		err error
 	)
 
+	inboundMTPs := handler.inferMTPFromCty(envelope.MediaTypeProfile)
+
+	logger.Debugf("inferred MTPs of inbound message: %v", inboundMTPs)
+
 	msg, err = service.ParseDIDCommMsgMap(envelope.Message)
 	if err != nil {
 		return err
@@ -110,10 +117,7 @@ func (handler *MessageHandler) HandleInboundEnvelope(envelope *transport.Envelop
 
 	isDIDEx := (&didexchange.Service{}).Accept(msg.Type())
 
-	isV2, err := service.IsDIDCommV2(&msg)
-	if err != nil {
-		return err
-	}
+	isV2 := service.IsDIDCommV2(&msg)
 
 	var (
 		myDID, theirDID string
@@ -126,6 +130,8 @@ func (handler *MessageHandler) HandleInboundEnvelope(envelope *transport.Envelop
 		return fmt.Errorf("handling inbound peer DID: %w", err)
 	}
 
+	var rec *service.ConnectionRecord
+
 	// if msg is not a didexchange message, do additional handling
 	if !isDIDEx {
 		myDID, theirDID, err = handler.getDIDs(envelope, msg)
@@ -135,10 +141,12 @@ func (handler *MessageHandler) HandleInboundEnvelope(envelope *transport.Envelop
 
 		gotDIDs = true
 
-		err = handler.didcommV2Handler.HandleInboundMessage(msg, theirDID, myDID)
+		rec, err = handler.didcommV2Handler.HandleInboundMessage(msg, theirDID, myDID, inboundMTPs)
 		if err != nil {
-			return fmt.Errorf("handle rotation: %w", err)
+			return fmt.Errorf("didcomm v2 middleware: %w", err)
 		}
+
+		logger.Debugf("Connection record: %#v", rec)
 	}
 
 	var foundService dispatcher.ProtocolService
@@ -164,6 +172,9 @@ func (handler *MessageHandler) HandleInboundEnvelope(envelope *transport.Envelop
 			}
 		}
 
+		// TODO: add connection record to service.DIDCommContext, with the record returned by the middleware
+		//  - this would require a major refactor, however, to avoid an import cycle...
+		//    note: refactor done!
 		_, err = foundService.HandleInbound(msg, service.NewDIDCommContext(myDID, theirDID, nil))
 
 		return err
@@ -328,4 +339,62 @@ func (handler *MessageHandler) tryToHandle(
 	_, err := svc.HandleInbound(msg, ctx)
 
 	return err
+}
+
+func (handler *MessageHandler) inferMTPFromCty(cty string) []string {
+	candidates := mtpsForCty(cty)
+
+	return intersect(handler.supportedMTPs, candidates)
+}
+
+func mtpsForCty(cty string) []string {
+	switch cty {
+	case transport.MediaTypeAIP2RFC0019Profile, transport.MediaTypeProfileDIDCommAIP1,
+		transport.MediaTypeRFC0019EncryptedEnvelope:
+		return []string{
+			transport.MediaTypeAIP2RFC0019Profile,
+			transport.MediaTypeProfileDIDCommAIP1,
+			transport.MediaTypeRFC0019EncryptedEnvelope,
+		}
+	case transport.MediaTypeV2EncryptedEnvelope, transport.MediaTypeV2PlaintextPayload,
+		transport.MediaTypeAIP2RFC0587Profile, transport.MediaTypeDIDCommV2Profile:
+		return []string{
+			transport.MediaTypeV2EncryptedEnvelope,
+			transport.MediaTypeV2PlaintextPayload,
+			transport.MediaTypeAIP2RFC0587Profile,
+			transport.MediaTypeDIDCommV2Profile,
+		}
+	case transport.MediaTypeV2EncryptedEnvelopeV1PlaintextPayload, transport.MediaTypeV1PlaintextPayload:
+		return []string{
+			transport.MediaTypeV2EncryptedEnvelopeV1PlaintextPayload,
+			transport.MediaTypeV1PlaintextPayload,
+		}
+	default:
+		return nil
+	}
+}
+
+func list2set(list []string) map[string]struct{} {
+	set := map[string]struct{}{}
+
+	for _, e := range list {
+		set[e] = struct{}{}
+	}
+
+	return set
+}
+
+// intersect returns the intersection of two lists of strings, in the order of list1.
+func intersect(list1, list2 []string) []string {
+	set := list2set(list2)
+
+	var out []string
+
+	for _, s := range list1 {
+		if _, ok := set[s]; ok {
+			out = append(out, s)
+		}
+	}
+
+	return out
 }

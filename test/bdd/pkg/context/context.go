@@ -14,6 +14,7 @@ import (
 	"nhooyr.io/websocket"
 	"nhooyr.io/websocket/wsjson"
 
+	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
 	"github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
 	"github.com/hyperledger/aries-framework-go/pkg/client/mediator"
 	"github.com/hyperledger/aries-framework-go/pkg/client/outofband"
@@ -34,6 +35,7 @@ type BDDContext struct {
 	OutOfBandClients   map[string]*outofband.Client
 	OutOfBandV2Clients map[string]*outofbandv2.Client
 	DIDExchangeClients map[string]*didexchange.Client
+	ConnectionClients  map[string]*connection.Client
 	RouteClients       map[string]*mediator.Client
 	RouteCallbacks     map[string]chan interface{}
 	PublicDIDDocs      map[string]*did.Doc
@@ -61,6 +63,7 @@ func NewBDDContext() *BDDContext {
 		OutOfBandClients:   make(map[string]*outofband.Client),
 		OutOfBandV2Clients: make(map[string]*outofbandv2.Client),
 		DIDExchangeClients: make(map[string]*didexchange.Client),
+		ConnectionClients:  make(map[string]*connection.Client),
 		RouteClients:       make(map[string]*mediator.Client),
 		RouteCallbacks:     make(map[string]chan interface{}),
 		PublicDIDDocs:      make(map[string]*did.Doc),

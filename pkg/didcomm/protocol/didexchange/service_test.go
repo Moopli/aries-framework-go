@@ -400,7 +400,7 @@ func TestService_Handle_Invitee(t *testing.T) {
 	}
 
 	// Alice automatically sends a Request to Bob and is now in REQUESTED state.
-	connRecord, err := s.connectionRecorder.GetConnectionRecord(connID)
+	connRecord, err := s.connectionRecorder.GetDIDExConnectionRecord(connID)
 	require.NoError(t, err)
 	require.Equal(t, (&requested{}).Name(), connRecord.State)
 	require.Equal(t, invitation.ID, connRecord.InvitationID)
@@ -729,9 +729,22 @@ func TestCreateConnection(t *testing.T) {
 
 		connRec, err := connection.NewRecorder(provider)
 		require.NoError(t, err)
+
+		persistentRecord := &service.ConnectionRecord{
+			ConnectionID:      record.ConnectionID,
+			ParentThreadID:    record.ParentThreadID,
+			TheirLabel:        record.TheirLabel,
+			TheirDID:          record.TheirDID,
+			MyDID:             record.MyDID,
+			InvitationID:      record.InvitationID,
+			MediaTypeProfiles: record.MediaTypeProfiles,
+			DIDCommVersion:    record.DIDCommVersion,
+		}
+
+		// validate persistent record data
 		result, err := connRec.GetConnectionRecord(record.ConnectionID)
 		require.NoError(t, err)
-		require.Equal(t, record, result)
+		require.Equal(t, persistentRecord, result)
 	})
 
 	t.Run("wraps vdr registry error", func(t *testing.T) {
@@ -1699,7 +1712,7 @@ func TestAcceptInvitation(t *testing.T) {
 			ConnectionID: id,
 			State:        StateIDRequested,
 		}
-		err = svc.connectionRecorder.SaveConnectionRecord(connRecord)
+		err = svc.connectionRecorder.SaveDIDExConnectionRecord(connRecord)
 		require.NoError(t, err)
 
 		err = svc.storeEventProtocolStateData(&message{ConnRecord: connRecord})
@@ -1841,7 +1854,7 @@ func TestAcceptInvitationWithPublicDID(t *testing.T) {
 			ConnectionID: id,
 			State:        StateIDRequested,
 		}
-		err = svc.connectionRecorder.SaveConnectionRecord(connRecord)
+		err = svc.connectionRecorder.SaveDIDExConnectionRecord(connRecord)
 		require.NoError(t, err)
 
 		err = svc.storeEventProtocolStateData(&message{ConnRecord: connRecord})

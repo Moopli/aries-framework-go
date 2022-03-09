@@ -8,8 +8,10 @@ package connection
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
 
 	"github.com/gorilla/mux"
 
@@ -26,6 +28,7 @@ import (
 // constants for connection management endpoints.
 const (
 	OperationID            = "/connections"
+	QueryPath              = OperationID + "/query"
 	RotateDIDPath          = OperationID + "/{id}/rotate-did"
 	CreateConnectionV2Path = OperationID + "/create-v2"
 	SetConnectionToV2Path  = OperationID + "/{id}/use-v2"
@@ -73,9 +76,27 @@ func (c *Operation) GetRESTHandlers() []rest.Handler {
 func (c *Operation) registerHandler() {
 	c.handlers = []rest.Handler{
 		cmdutil.NewHTTPHandler(RotateDIDPath, http.MethodPost, c.RotateDID),
+		cmdutil.NewHTTPHandler(QueryPath, http.MethodGet, c.Query),
 		cmdutil.NewHTTPHandler(SetConnectionToV2Path, http.MethodPost, c.SetConnectionToDIDCommV2),
 		cmdutil.NewHTTPHandler(CreateConnectionV2Path, http.MethodPost, c.CreateConnectionV2),
 	}
+}
+
+// Query swagger:route GET /connections/query connections queryConnections
+//
+// Query connections.
+//
+// Responses:
+//    default: genericError
+//        200: queryConnectionResponse
+func (c *Operation) Query(rw http.ResponseWriter, req *http.Request) {
+	reqBytes, err := queryValuesAsJSON(req.URL.Query())
+	if err != nil {
+		rest.SendHTTPStatusError(rw, http.StatusBadRequest, connection.InvalidRequestErrorCode, err)
+		return
+	}
+
+	rest.Execute(c.command.QueryConnections, rw, bytes.NewReader(reqBytes))
 }
 
 // RotateDID swagger:route POST /connections/{id}/rotate-did connections rotateDID
@@ -127,4 +148,19 @@ func getIDFromRequest(rw http.ResponseWriter, req *http.Request) (string, bool) 
 	}
 
 	return id, true
+}
+
+// queryValuesAsJSON converts query strings to `map[string]string`
+// and marshals them to JSON bytes.
+func queryValuesAsJSON(vals url.Values) ([]byte, error) {
+	// normalize all query string key/values
+	args := make(map[string]string)
+
+	for k, v := range vals {
+		if len(v) > 0 {
+			args[k] = v[0]
+		}
+	}
+
+	return json.Marshal(args)
 }

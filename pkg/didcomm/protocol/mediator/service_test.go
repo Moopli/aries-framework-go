@@ -155,8 +155,8 @@ func TestServiceHandleOutbound(t *testing.T) {
 				},
 			},
 		}
-		connRec := &connection.Record{
-			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID, State: "completed",
+		connRec := &service.ConnectionRecord{
+			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID,
 		}
 
 		r, err := connection.NewRecorder(provider)
@@ -228,7 +228,7 @@ func TestServiceHandleOutbound(t *testing.T) {
 		})
 		require.NoError(t, err)
 		s.connectionLookup = &connectionsStub{
-			getConnRecord: func(string) (*connection.Record, error) {
+			getConnRecord: func(string) (*service.ConnectionRecord, error) {
 				return nil, expected
 			},
 		}
@@ -1554,10 +1554,10 @@ func randomID() string {
 
 type connectionsStub struct {
 	getConnIDByDIDs func(string, string) (string, error)
-	getConnRecord   func(string) (*connection.Record, error)
+	getConnRecord   func(string) (*service.ConnectionRecord, error)
 }
 
-func (c *connectionsStub) GetConnectionRecordByDIDs(myDID, theirDID string) (*connection.Record, error) {
+func (c *connectionsStub) GetConnectionRecordByDIDs(myDID, theirDID string) (*service.ConnectionRecord, error) {
 	connID, err := c.GetConnectionIDByDIDs(myDID, theirDID)
 	if err != nil {
 		return nil, err
@@ -1574,7 +1574,7 @@ func (c *connectionsStub) GetConnectionIDByDIDs(myDID, theirDID string) (string,
 	return "", nil
 }
 
-func (c *connectionsStub) GetConnectionRecord(id string) (*connection.Record, error) {
+func (c *connectionsStub) GetConnectionRecord(id string) (*service.ConnectionRecord, error) {
 	if c.getConnRecord != nil {
 		return c.getConnRecord(id)
 	}

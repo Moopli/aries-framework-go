@@ -16,6 +16,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	didcomm "github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/decorator"
 	mockstorage "github.com/hyperledger/aries-framework-go/pkg/mock/storage"
 	"github.com/hyperledger/aries-framework-go/spi/storage"
@@ -359,7 +360,7 @@ func TestConnectionRecordByState(t *testing.T) {
 		ConnectionID: uuid.New().String(), ThreadID: threadIDValue,
 		Namespace: MyNSPrefix, State: "requested",
 	}
-	err = recorder.SaveConnectionRecord(connRec)
+	err = recorder.SaveDIDExConnectionRecord(connRec)
 	require.NoError(t, err)
 
 	// data exists
@@ -377,7 +378,7 @@ func TestConnectionRecordByState(t *testing.T) {
 		ConnectionID: uuid.New().String(), ThreadID: threadIDValue,
 		Namespace: MyNSPrefix,
 	}
-	err = recorder.SaveConnectionRecord(connRec)
+	err = recorder.SaveDIDExConnectionRecord(connRec)
 	require.NoError(t, err)
 	_, err = recorder.GetConnectionRecordAtState(connRec.ConnectionID, "requested")
 	require.Error(t, err)
@@ -399,10 +400,10 @@ func TestConnectionRecorder_SaveConnectionRecord(t *testing.T) {
 			ThreadID:     threadIDValue,
 			ConnectionID: uuid.New().String(), State: stateNameInvited, Namespace: TheirNSPrefix,
 		}
-		err = recorder.SaveConnectionRecord(record)
+		err = recorder.SaveDIDExConnectionRecord(record)
 		require.NoError(t, err)
 
-		recordFound, err := recorder.GetConnectionRecord(record.ConnectionID)
+		recordFound, err := recorder.GetDIDExConnectionRecord(record.ConnectionID)
 		require.NoError(t, err)
 		require.NotNil(t, recordFound)
 		require.Equal(t, record, recordFound)
@@ -432,13 +433,15 @@ func TestConnectionRecorder_SaveConnectionRecord(t *testing.T) {
 			MyDID:        "did:mydid:123",
 			TheirDID:     "did:theirdid:123",
 		}
-		err = recorder.SaveConnectionRecord(record)
+		err = recorder.SaveDIDExConnectionRecord(record)
 		require.NoError(t, err)
+
+		persistentRecord := convertToPersistentRecord(record)
 
 		recordFound, err := recorder.GetConnectionRecord(record.ConnectionID)
 		require.NoError(t, err)
 		require.NotNil(t, recordFound)
-		require.Equal(t, record, recordFound)
+		require.Equal(t, persistentRecord, recordFound)
 
 		// make sure it exists only in both permanent and protocol state store
 		var r1 Record
@@ -446,10 +449,10 @@ func TestConnectionRecorder_SaveConnectionRecord(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, record, &r1)
 
-		var r2 Record
+		var r2 didcomm.ConnectionRecord
 		err = getAndUnmarshal(getConnectionKeyPrefix()(record.ConnectionID), &r2, recorder.store)
 		require.NoError(t, err)
-		require.Equal(t, record, &r2)
+		require.Equal(t, persistentRecord, &r2)
 	})
 
 	t.Run("save connection record error scenario 1", func(t *testing.T) {
@@ -465,7 +468,7 @@ func TestConnectionRecorder_SaveConnectionRecord(t *testing.T) {
 			ThreadID:     "",
 			ConnectionID: "test", State: stateNameInvited, Namespace: TheirNSPrefix,
 		}
-		err = record.SaveConnectionRecord(connRec)
+		err = record.SaveDIDExConnectionRecord(connRec)
 		require.Contains(t, err.Error(), errMsg)
 	})
 
@@ -482,7 +485,7 @@ func TestConnectionRecorder_SaveConnectionRecord(t *testing.T) {
 			ThreadID:     "",
 			ConnectionID: "test", State: StateNameCompleted, Namespace: TheirNSPrefix,
 		}
-		err = record.SaveConnectionRecord(connRec)
+		err = record.SaveDIDExConnectionRecord(connRec)
 		require.Contains(t, err.Error(), errMsg)
 	})
 }
@@ -501,13 +504,15 @@ func TestConnectionRecorder_RemoveConnection(t *testing.T) {
 			MyDID:        "did:mydid:123",
 			TheirDID:     "did:theirdid:123",
 		}
-		err = recorder.SaveConnectionRecord(record)
+		err = recorder.SaveDIDExConnectionRecord(record)
 		require.NoError(t, err)
+
+		persistentRecord := convertToPersistentRecord(record)
 
 		recordFound, err := recorder.GetConnectionRecord(record.ConnectionID)
 		require.NoError(t, err)
 		require.NotNil(t, recordFound)
-		require.Equal(t, record, recordFound)
+		require.Equal(t, persistentRecord, recordFound)
 
 		err = recorder.RemoveConnection(record.ConnectionID)
 		require.NoError(t, err)
@@ -577,7 +582,7 @@ func TestConnectionRecorder_RemoveConnection(t *testing.T) {
 			MyDID:        "did:mydid:123",
 			TheirDID:     "did:theirdid:123",
 		}
-		err = recorder.SaveConnectionRecord(record)
+		err = recorder.SaveDIDExConnectionRecord(record)
 		require.NoError(t, err)
 
 		err = recorder.RemoveConnection(record.ConnectionID)
@@ -603,7 +608,7 @@ func TestConnectionRecorder_RemoveConnection(t *testing.T) {
 			MyDID:        "did:mydid:123",
 			TheirDID:     "did:theirdid:123",
 		}
-		err = recorder.SaveConnectionRecord(record)
+		err = recorder.SaveDIDExConnectionRecord(record)
 		require.NoError(t, err)
 
 		err = recorder.RemoveConnection(record.ConnectionID)
@@ -623,7 +628,7 @@ func TestConnectionRecorder_RemoveConnection(t *testing.T) {
 			MyDID:        "did:mydid:123",
 			TheirDID:     "did:theirdid:123",
 		}
-		err = recorder.SaveConnectionRecord(record)
+		err = recorder.SaveDIDExConnectionRecord(record)
 		require.NoError(t, err)
 
 		err = recorder.RemoveConnection(record.ConnectionID)

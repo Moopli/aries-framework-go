@@ -123,7 +123,7 @@ func (s *stateAwaitResponse) handleHandshakeReuse(ctx *context, deps *dependenci
 		)
 	}
 
-	record, err := deps.connections.GetConnectionRecord(connID)
+	record, err := deps.connections.GetDIDExConnectionRecord(connID)
 	if err != nil {
 		return nil, nil, true, fmt.Errorf("failed to fetch connection record [connID=%s]: %w", connID, err)
 	}
@@ -282,7 +282,7 @@ func findConnectionRecord(records []*connection.Record, theirDID string) (*conne
 	for i := range records {
 		record := records[i]
 
-		if record.State != didexchange.StateIDCompleted {
+		if record.State != didexchange.StateIDCompleted && record.State != "" {
 			continue
 		}
 

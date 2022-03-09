@@ -34,7 +34,7 @@ import (
 	docverifiable "github.com/hyperledger/aries-framework-go/pkg/doc/verifiable"
 	arieskms "github.com/hyperledger/aries-framework-go/pkg/kms"
 	"github.com/hyperledger/aries-framework-go/pkg/vdr/fingerprint"
-	"github.com/hyperledger/aries-framework-go/test/bdd/pkg/connection"
+	connectionsteps "github.com/hyperledger/aries-framework-go/test/bdd/pkg/connection"
 	"github.com/hyperledger/aries-framework-go/test/bdd/pkg/context"
 	didexsteps "github.com/hyperledger/aries-framework-go/test/bdd/pkg/didexchange"
 	"github.com/hyperledger/aries-framework-go/test/bdd/pkg/outofband"
@@ -130,7 +130,7 @@ func (s *ControllerSteps) establishDIDCommV2Connection(agent1, agent2 string) er
 	didexSteps := didexsteps.NewDIDExchangeControllerSteps()
 	didexSteps.SetContext(s.bddContext)
 
-	connSteps := connection.NewControllerSteps()
+	connSteps := connectionsteps.NewControllerSteps()
 	connSteps.SetContext(s.bddContext)
 
 	err := didexSteps.CreatePublicDID(agent1, "")
@@ -168,7 +168,7 @@ func (s *ControllerSteps) createDIDCommV2ConnectionWithOOBv2(inviter, invitee st
 	oobSteps := outofband.NewOutofbandControllerSteps()
 	oobSteps.SetContext(s.bddContext)
 
-	connSteps := connection.NewControllerSteps()
+	connSteps := connectionsteps.NewControllerSteps()
 	connSteps.SetContext(s.bddContext)
 
 	err = oobSteps.CreateOOBV2(inviter)

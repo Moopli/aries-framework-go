@@ -16,6 +16,8 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/google/uuid"
 
+	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
+
 	didexClient "github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
 	"github.com/hyperledger/aries-framework-go/pkg/client/outofband"
 	"github.com/hyperledger/aries-framework-go/pkg/client/outofbandv2"
@@ -388,29 +390,32 @@ func (sdk *SDKSteps) ConfirmConnections(senderID, receiverID, status string) err
 		return fmt.Errorf("failed to wait for post events : %w", err)
 	}
 
-	connSender, err := sdk.GetConnection(senderID, receiverID)
+	_, err = sdk.GetConnection(senderID, receiverID)
 	if err != nil {
 		return err
 	}
 
-	if connSender.State != status {
-		return fmt.Errorf(
-			"%s's connection with %s is in state %s but expected %s",
-			senderID, receiverID, connSender.State, status,
-		)
-	}
+	// note: no longer need to validate connSender/connReceiver state,
+	// since connection client only returns complete connections.
 
-	connReceiver, err := sdk.GetConnection(receiverID, senderID)
+	//if connSender.State != status && connSender.State != "" {
+	//	return fmt.Errorf(
+	//		"%s's connection with %s is in state %s but expected %s",
+	//		senderID, receiverID, connSender.State, status,
+	//	)
+	//}
+
+	_, err = sdk.GetConnection(receiverID, senderID)
 	if err != nil {
 		return err
 	}
 
-	if connReceiver.State != status {
-		return fmt.Errorf(
-			"%s's connection with %s is in state %s but expected %s",
-			receiverID, senderID, connSender.State, status,
-		)
-	}
+	//if connReceiver.State != status && connReceiver.State != "" {
+	//	return fmt.Errorf(
+	//		"%s's connection with %s is in state %s but expected %s",
+	//		receiverID, senderID, connSender.State, status,
+	//	)
+	//}
 
 	return nil
 }
@@ -453,8 +458,8 @@ func (sdk *SDKSteps) verifyConnectionsCount(agentA, agentB string, expected int)
 }
 
 // GetConnection returns connection between agents.
-func (sdk *SDKSteps) GetConnection(from, to string) (*didexClient.Connection, error) {
-	connections, err := sdk.context.DIDExchangeClients[from].QueryConnections(&didexClient.QueryConnectionsParams{})
+func (sdk *SDKSteps) GetConnection(from, to string) (*service.ConnectionRecord, error) {
+	connections, err := sdk.context.ConnectionClients[from].Query(&connection.QueryParams{})
 	if err != nil {
 		return nil, fmt.Errorf("%s failed to fetch their connections : %w", from, err)
 	}

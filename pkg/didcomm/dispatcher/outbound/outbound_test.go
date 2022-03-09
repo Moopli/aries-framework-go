@@ -28,7 +28,6 @@ import (
 	mockkms "github.com/hyperledger/aries-framework-go/pkg/mock/kms"
 	mockstore "github.com/hyperledger/aries-framework-go/pkg/mock/storage"
 	mockvdr "github.com/hyperledger/aries-framework-go/pkg/mock/vdr"
-	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 	"github.com/hyperledger/aries-framework-go/spi/storage"
 )
 
@@ -229,7 +228,7 @@ func TestOutboundDispatcher_SendToDID(t *testing.T) {
 
 		o.connections = &mockConnectionLookup{
 			getConnectionByDIDsVal: "mock1",
-			getConnectionRecordVal: &connection.Record{},
+			getConnectionRecordVal: &service.ConnectionRecord{},
 		}
 
 		require.NoError(t, o.SendToDID(service.DIDCommMsgMap{
@@ -256,7 +255,7 @@ func TestOutboundDispatcher_SendToDID(t *testing.T) {
 
 		o.connections = &mockConnectionLookup{
 			getConnectionByDIDsVal: "mock1",
-			getConnectionRecordVal: &connection.Record{
+			getConnectionRecordVal: &service.ConnectionRecord{
 				PeerDIDInitialState: "mock-peer-initial-state",
 				DIDCommVersion:      service.V2,
 				ParentThreadID:      "parent-thread-id-value",
@@ -288,7 +287,7 @@ func TestOutboundDispatcher_SendToDID(t *testing.T) {
 
 		o.connections = &mockConnectionLookup{
 			getConnectionByDIDsVal: "mock1",
-			getConnectionRecordVal: &connection.Record{},
+			getConnectionRecordVal: &service.ConnectionRecord{},
 		}
 
 		// did rotation err is logged, not returned
@@ -313,7 +312,7 @@ func TestOutboundDispatcher_SendToDID(t *testing.T) {
 		require.NoError(t, err)
 
 		o.connections = &mockConnectionLookup{
-			getConnectionRecordVal: &connection.Record{},
+			getConnectionRecordVal: &service.ConnectionRecord{},
 		}
 
 		err = o.SendToDID(service.DIDCommMsgMap{}, testDID, "")
@@ -337,7 +336,7 @@ func TestOutboundDispatcher_SendToDID(t *testing.T) {
 		require.NoError(t, err)
 
 		o.connections = &mockConnectionLookup{
-			getConnectionRecordVal: &connection.Record{},
+			getConnectionRecordVal: &service.ConnectionRecord{},
 		}
 
 		err = o.SendToDID(service.DIDCommMsgMap{}, testDID, "")
@@ -389,7 +388,7 @@ func TestOutboundDispatcher_SendToDID(t *testing.T) {
 
 		o.connections = &mockConnectionLookup{
 			getConnectionByDIDsVal: "mock1",
-			getConnectionRecordVal: &connection.Record{},
+			getConnectionRecordVal: &service.ConnectionRecord{},
 		}
 
 		err = o.SendToDID(service.DIDCommMsgMap{}, testDID, "def")
@@ -414,7 +413,7 @@ func TestOutboundDispatcher_SendToDID(t *testing.T) {
 
 		o.connections = &mockConnectionLookup{
 			getConnectionByDIDsVal: "mock1",
-			getConnectionRecordVal: &connection.Record{},
+			getConnectionRecordVal: &service.ConnectionRecord{},
 		}
 
 		err = o.SendToDID(&mockMessage{Type: "foo"}, testDID, "def")
@@ -764,7 +763,7 @@ func (m *mockPackager) UnpackMessage(encMessage []byte) (*transport.Envelope, er
 type mockConnectionLookup struct {
 	getConnectionByDIDsVal string
 	getConnectionByDIDsErr error
-	getConnectionRecordVal *connection.Record
+	getConnectionRecordVal *service.ConnectionRecord
 	getConnectionRecordErr error
 	saveConnectionErr      error
 }
@@ -773,11 +772,11 @@ func (m *mockConnectionLookup) GetConnectionIDByDIDs(myDID, theirDID string) (st
 	return m.getConnectionByDIDsVal, m.getConnectionByDIDsErr
 }
 
-func (m *mockConnectionLookup) GetConnectionRecord(s string) (*connection.Record, error) {
+func (m *mockConnectionLookup) GetConnectionRecord(s string) (*service.ConnectionRecord, error) {
 	return m.getConnectionRecordVal, m.getConnectionRecordErr
 }
 
-func (m *mockConnectionLookup) GetConnectionRecordByDIDs(myDID, theirDID string) (*connection.Record, error) {
+func (m *mockConnectionLookup) GetConnectionRecordByDIDs(myDID, theirDID string) (*service.ConnectionRecord, error) {
 	if m.getConnectionByDIDsErr != nil {
 		return nil, m.getConnectionByDIDsErr
 	}
@@ -785,7 +784,7 @@ func (m *mockConnectionLookup) GetConnectionRecordByDIDs(myDID, theirDID string)
 	return m.getConnectionRecordVal, m.getConnectionRecordErr
 }
 
-func (m *mockConnectionLookup) SaveConnectionRecord(record *connection.Record) error {
+func (m *mockConnectionLookup) SaveConnectionRecord(record *service.ConnectionRecord) error {
 	return m.saveConnectionErr
 }
 

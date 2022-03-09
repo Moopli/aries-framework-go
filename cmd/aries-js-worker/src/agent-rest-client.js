@@ -443,6 +443,10 @@ const pkgs = {
             path: "/connections/{id}/use-v2",
             method: "POST",
             pathParam: "id"
+        },
+        QueryConnections: {
+            path: "/connections/query",
+            method: "GET"
         }
     },
     kms: {

@@ -7,6 +7,7 @@ SPDX-License-Identifier: Apache-2.0
 package connection
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/google/uuid"
@@ -57,6 +58,55 @@ func New(prov provider) (*Client, error) {
 	}, nil
 }
 
+// Query queries connection records for connections matching the query criteria.
+func (c *Client) Query(request *QueryParams) ([]*service.ConnectionRecord, error) { // nolint:gocyclo,gocognit
+	if request.ConnectionID != "" {
+		record, err := c.connectionRecorder.GetConnectionRecord(request.ConnectionID)
+		if errors.Is(err, storage.ErrDataNotFound) {
+			return nil, nil
+		} else if err != nil {
+			return nil, fmt.Errorf("failed to get connection: %w", err)
+		}
+
+		return []*service.ConnectionRecord{record}, nil
+	}
+
+	records, err := c.connectionRecorder.QueryCompleteConnections()
+	if err != nil {
+		return nil, fmt.Errorf("failed query connections: %w", err)
+	}
+
+	var result []*service.ConnectionRecord
+
+	// TODO optimization: query by DIDs if only DIDs are given as query params.
+
+	for _, record := range records {
+		if request.ParentThreadID != "" && request.ParentThreadID != record.ParentThreadID {
+			continue
+		}
+
+		if request.TheirLabel != "" && request.TheirLabel != record.TheirLabel {
+			continue
+		}
+
+		if request.TheirDID != "" && request.TheirDID != record.TheirDID {
+			continue
+		}
+
+		if request.MyDID != "" && request.MyDID != record.MyDID {
+			continue
+		}
+
+		if request.InvitationID != "" && request.InvitationID != record.InvitationID {
+			continue
+		}
+
+		result = append(result, record)
+	}
+
+	return result, nil
+}
+
 // RotateDID rotates the DID of the given connection to the given new DID, using the signing KID for the key in the old
 // DID doc to sign the DID rotation.
 func (c *Client) RotateDID(connectionID, signingKID string, opts ...RotateDIDOption) (string, error) {
@@ -80,14 +130,7 @@ func (c *Client) RotateDID(connectionID, signingKID string, opts ...RotateDIDOpt
 
 // CreateConnectionV2 creates a DIDComm V2 connection with the given DID.
 func (c *Client) CreateConnectionV2(myDID, theirDID string, opts ...CreateConnectionOption) (string, error) {
-	theirDocRes, err := c.vdr.Resolve(theirDID)
-	if err != nil {
-		return "", fmt.Errorf("resolving their DID: %w", err)
-	}
-
-	theirDoc := theirDocRes.DIDDocument
-
-	err = c.didMap.SaveDIDFromDoc(theirDoc)
+	err := c.didMap.SaveDIDByResolving(theirDID)
 	if err != nil {
 		return "", fmt.Errorf("failed to save theirDID to the did.ConnectionStore: %w", err)
 	}
@@ -97,23 +140,13 @@ func (c *Client) CreateConnectionV2(myDID, theirDID string, opts ...CreateConnec
 		return "", fmt.Errorf("failed to save myDID to the did.ConnectionStore: %w", err)
 	}
 
-	destination, err := service.CreateDestination(theirDoc)
-	if err != nil {
-		return "", fmt.Errorf("failed to create destination: %w", err)
-	}
-
 	connID := uuid.New().String()
 
-	connRec := connection.Record{
-		ConnectionID:    connID,
-		State:           connection.StateNameCompleted,
-		TheirDID:        theirDID,
-		MyDID:           myDID,
-		ServiceEndPoint: destination.ServiceEndpoint,
-		RecipientKeys:   destination.RecipientKeys,
-		RoutingKeys:     destination.RoutingKeys,
-		Namespace:       connection.MyNSPrefix,
-		DIDCommVersion:  service.V2,
+	connRec := service.ConnectionRecord{
+		ConnectionID:   connID,
+		TheirDID:       theirDID,
+		MyDID:          myDID,
+		DIDCommVersion: service.V2,
 	}
 
 	for _, opt := range opts {
@@ -168,11 +201,11 @@ func ByCreatingPeerDID() RotateDIDOption {
 }
 
 // CreateConnectionOption options for Client.CreateConnectionV2.
-type CreateConnectionOption func(record *connection.Record)
+type CreateConnectionOption func(record *service.ConnectionRecord)
 
 // WithTheirLabel option.
 func WithTheirLabel(l string) CreateConnectionOption {
-	return func(record *connection.Record) {
+	return func(record *service.ConnectionRecord) {
 		record.TheirLabel = l
 	}
 }

@@ -278,52 +278,41 @@ type headerStub struct {
 	SKID string `json:"skid,omitempty"`
 }
 
-//nolint:funlen, gocyclo
-func getEncodingType(encMessage []byte) (string, []byte, error) {
-	var b64DecodedMessage []byte
+// returns true if encMessage was base64-encoded and double-quoted, and unwraps the message.
+func b64JSONUnwrap(encMessage []byte) (bool, []byte, error) {
+	doubleQuote := []byte("\"")
 
+	// packed message is base64 encoded and double-quoted.
+	if bytes.HasPrefix(encMessage, doubleQuote) && bytes.HasSuffix(encMessage, doubleQuote) {
+		msg := string(encMessage[1 : len(encMessage)-1])
+
+		envBytes1, err1 := base64.URLEncoding.DecodeString(msg)
+		envBytes2, err2 := base64.RawURLEncoding.DecodeString(msg)
+
+		switch {
+		case err1 == nil:
+			return true, envBytes1, nil
+		case err2 == nil:
+			return true, envBytes2, nil
+		default:
+			return false, nil, fmt.Errorf("decode wrapped header: URLEncoding error: %w, RawURLEncoding error: %v",
+				err1, err2)
+		}
+	}
+
+	return false, nil, nil
+}
+
+func getEncodingType(encMessage []byte) (string, error) {
 	env := &envelopeStub{}
 
-	//nolint:nestif
-	if strings.HasPrefix(string(encMessage), "{") { // full serialized
+	if bytes.HasPrefix(encMessage, []byte("{")) {
 		err := json.Unmarshal(encMessage, env)
 		if err != nil {
-			return "", nil, fmt.Errorf("parse envelope: %w", err)
+			return "", fmt.Errorf("parse wrapped envelope: %w", err)
 		}
-	} else {
-		doubleQuote := []byte("\"")
-
-		// packed message is base64 encoded and double-quoted.
-		if bytes.HasPrefix(encMessage, doubleQuote) && bytes.HasSuffix(encMessage, doubleQuote) {
-			msg := string(encMessage[1 : len(encMessage)-1])
-			var encodedEnvelope []byte
-
-			protBytes1, err1 := base64.URLEncoding.DecodeString(msg)
-			protBytes2, err2 := base64.RawURLEncoding.DecodeString(msg)
-
-			switch {
-			case err1 == nil:
-				encodedEnvelope = protBytes1
-			case err2 == nil:
-				encodedEnvelope = protBytes2
-			default:
-				return "", nil, fmt.Errorf("decode wrapped header: URLEncoding error: %w, RawURLEncoding error: %v",
-					err1, err2)
-			}
-
-			if bytes.HasPrefix(encodedEnvelope, []byte("{")) {
-				err := json.Unmarshal(encodedEnvelope, env)
-				if err != nil {
-					return "", nil, fmt.Errorf("parse wrapped envelope: %w", err)
-				}
-			} else { // compact serialized
-				env.Protected = strings.Split(string(encodedEnvelope), ".")[0]
-			}
-
-			b64DecodedMessage = encodedEnvelope
-		} else { // compact serialized
-			env.Protected = strings.Split(string(encMessage), ".")[0]
-		}
+	} else { // compact serialized
+		env.Protected = strings.Split(string(encMessage), ".")[0]
 	}
 
 	var protBytes []byte
@@ -337,14 +326,14 @@ func getEncodingType(encMessage []byte) (string, []byte, error) {
 	case err2 == nil:
 		protBytes = protBytes2
 	default:
-		return "", nil, fmt.Errorf("decode header: URLEncoding error: %w, RawURLEncoding error: %v", err1, err2)
+		return "", fmt.Errorf("decode header: URLEncoding error: %w, RawURLEncoding error: %v", err1, err2)
 	}
 
 	prot := &headerStub{}
 
 	err := json.Unmarshal(protBytes, prot)
 	if err != nil {
-		return "", nil, fmt.Errorf("parse header: %w", err)
+		return "", fmt.Errorf("parse header: %w", err)
 	}
 
 	packerID := prot.Type
@@ -355,12 +344,21 @@ func getEncodingType(encMessage []byte) (string, []byte, error) {
 		packerID += authSuffix
 	}
 
-	return packerID, b64DecodedMessage, nil
+	return packerID, nil
 }
 
 // UnpackMessage Unpack a message.
 func (bp *Packager) UnpackMessage(encMessage []byte) (*transport.Envelope, error) {
-	encType, b64DecodedMessage, err := getEncodingType(encMessage)
+	isDecoded, b64DecodedMessage, err := b64JSONUnwrap(encMessage)
+	if err != nil {
+		return nil, fmt.Errorf("unwrap base 64 json string: %w", err)
+	}
+
+	if isDecoded {
+		encMessage = b64DecodedMessage
+	}
+
+	encType, err := getEncodingType(encMessage)
 	if err != nil {
 		return nil, fmt.Errorf("getEncodingType: %w", err)
 	}
@@ -370,14 +368,14 @@ func (bp *Packager) UnpackMessage(encMessage []byte) (*transport.Envelope, error
 		return nil, fmt.Errorf("message Type not recognized")
 	}
 
-	if len(b64DecodedMessage) > 0 {
-		encMessage = b64DecodedMessage
-	}
-
 	envelope, err := p.Unpack(encMessage)
 	if err != nil {
 		return nil, fmt.Errorf("unpack: %w", err)
 	}
+
+	// TODO: is this correct for all cases?
+	//   we can do logic in inbound message handler
+	envelope.MediaTypeProfile = encType
 
 	return envelope, nil
 }

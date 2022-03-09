@@ -175,9 +175,8 @@ func TestOperation_SetConnectionToDIDCommV2(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&didcomm.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		op, err := New(prov)
@@ -247,11 +246,10 @@ func TestOperation_RotateDID(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&didcomm.ConnectionRecord{
 			ConnectionID: connID,
 			MyDID:        myDID,
 			TheirDID:     theirDID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		op, err := New(prov)

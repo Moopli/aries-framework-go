@@ -68,7 +68,7 @@ func (d *messagingSDKSteps) sendMessage(fromAgentID, toAgentID string, msg servi
 	var target *connection.Record
 
 	for _, conn := range connections {
-		if conn.State == "completed" && conn.TheirLabel == toAgentID {
+		if (conn.State == "completed" || (conn.TheirDID != "" && conn.MyDID != "")) && conn.TheirLabel == toAgentID {
 			target = conn
 
 			break

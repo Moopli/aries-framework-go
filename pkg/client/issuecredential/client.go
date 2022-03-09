@@ -13,7 +13,6 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/decorator"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/issuecredential"
 	issuecredentialmiddleware "github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/middleware/issuecredential"
-	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 )
 
 const (
@@ -134,7 +133,7 @@ func (c *Client) Actions() ([]Action, error) {
 }
 
 // SendOffer is used by the Issuer to send an offer.
-func (c *Client) SendOffer(offer *OfferCredential, conn *connection.Record) (string, error) {
+func (c *Client) SendOffer(offer *OfferCredential, conn *service.ConnectionRecord) (string, error) {
 	if offer == nil {
 		return "", errEmptyOffer
 	}
@@ -158,7 +157,7 @@ func (c *Client) SendOffer(offer *OfferCredential, conn *connection.Record) (str
 }
 
 // SendProposal is used by the Holder to send a proposal.
-func (c *Client) SendProposal(proposal *ProposeCredential, conn *connection.Record) (string, error) {
+func (c *Client) SendProposal(proposal *ProposeCredential, conn *service.ConnectionRecord) (string, error) {
 	if proposal == nil {
 		return "", errEmptyProposal
 	}
@@ -182,7 +181,7 @@ func (c *Client) SendProposal(proposal *ProposeCredential, conn *connection.Reco
 }
 
 // SendRequest is used by the Holder to send a request.
-func (c *Client) SendRequest(request *RequestCredential, conn *connection.Record) (string, error) {
+func (c *Client) SendRequest(request *RequestCredential, conn *service.ConnectionRecord) (string, error) {
 	if request == nil {
 		return "", errEmptyRequest
 	}

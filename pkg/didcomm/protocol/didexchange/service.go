@@ -565,7 +565,7 @@ func (s *Service) accept(connectionID, publicDID, label, stateID, errMsg string,
 		return fmt.Errorf("failed to accept invitation for connectionID=%s : %s : %w", connectionID, errMsg, err)
 	}
 
-	connRecord, err := s.connectionRecorder.GetConnectionRecord(connectionID)
+	connRecord, err := s.connectionRecorder.GetDIDExConnectionRecord(connectionID)
 	if err != nil {
 		return fmt.Errorf("%s : %w", errMsg, err)
 	}
@@ -668,7 +668,7 @@ func (s *Service) update(msgType string, record *connection.Record) error {
 		return s.connectionRecorder.SaveConnectionRecordWithMappings(record)
 	}
 
-	return s.connectionRecorder.SaveConnectionRecord(record)
+	return s.connectionRecorder.SaveDIDExConnectionRecord(record)
 }
 
 // CreateConnection saves the record to the connection store and maps TheirDID to their recipient keys in
@@ -698,7 +698,7 @@ func (s *Service) CreateConnection(record *connection.Record, theirDID *did.Doc)
 
 	record.DIDCommVersion = service.V1
 
-	return s.connectionRecorder.SaveConnectionRecord(record)
+	return s.connectionRecorder.SaveDIDExConnectionRecord(record)
 }
 
 func (s *Service) connectionRecord(msg service.DIDCommMsg) (*connection.Record, error) {
@@ -756,7 +756,7 @@ func (s *Service) oobInvitationMsgRecord(msg service.DIDCommMsg) (*connection.Re
 		connRecord.InvitationDID = publicDID
 	}
 
-	if err := s.connectionRecorder.SaveConnectionRecord(connRecord); err != nil {
+	if err := s.connectionRecorder.SaveDIDExConnectionRecord(connRecord); err != nil {
 		return nil, err
 	}
 
@@ -794,7 +794,7 @@ func (s *Service) invitationMsgRecord(msg service.DIDCommMsg) (*connection.Recor
 		DIDCommVersion:  service.V1,
 	}
 
-	if err := s.connectionRecorder.SaveConnectionRecord(connRecord); err != nil {
+	if err := s.connectionRecorder.SaveDIDExConnectionRecord(connRecord); err != nil {
 		return nil, err
 	}
 
@@ -863,7 +863,7 @@ func (s *Service) requestMsgRecord(msg service.DIDCommMsg) (*connection.Record, 
 		connRecord.TheirDID = "did:peer:" + connRecord.TheirDID
 	}
 
-	if err := s.connectionRecorder.SaveConnectionRecord(connRecord); err != nil {
+	if err := s.connectionRecorder.SaveDIDExConnectionRecord(connRecord); err != nil {
 		return nil, err
 	}
 
@@ -936,6 +936,7 @@ func (s *Service) CreateImplicitInvitation(inviterLabel, inviterDID,
 		RecipientKeys:   dest.RecipientKeys,
 		TheirLabel:      inviterLabel,
 		Namespace:       findNamespace(InvitationMsgType),
+		DIDCommVersion:  service.V1,
 	}
 
 	if e := s.connectionRecorder.SaveConnectionRecordWithMappings(connRecord); e != nil {

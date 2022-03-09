@@ -67,7 +67,7 @@ type didExchSvc interface {
 
 type connectionRecorder interface {
 	SaveInvitation(string, interface{}) error
-	GetConnectionRecord(string) (*connection.Record, error)
+	GetDIDExConnectionRecord(string) (*connection.Record, error)
 	GetConnectionIDByDIDs(string, string) (string, error)
 	QueryConnectionRecords() ([]*connection.Record, error)
 }
@@ -714,7 +714,7 @@ func (s *Service) handleDIDEvent(e service.StateMsg) error {
 
 	connID := props.ConnectionID()
 
-	record, err := s.connections.GetConnectionRecord(connID)
+	record, err := s.connections.GetDIDExConnectionRecord(connID)
 	if err != nil {
 		return fmt.Errorf("handleDIDEvent: failed to get connection record: %w", err)
 	}

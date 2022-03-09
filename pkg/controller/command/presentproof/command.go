@@ -187,7 +187,7 @@ func (c *Command) SendRequestPresentation(rw io.Writer, req io.Reader) command.E
 		args   SendRequestPresentationArgs
 		err    error
 		errMsg string
-		rec    *connection.Record
+		rec    *service.ConnectionRecord
 	)
 
 	if err = json.NewDecoder(req).Decode(&args); err != nil {
@@ -246,7 +246,7 @@ func (c *Command) SendProposePresentation(rw io.Writer, req io.Reader) command.E
 		args   SendProposePresentationArgs
 		err    error
 		errMsg string
-		rec    *connection.Record
+		rec    *service.ConnectionRecord
 	)
 
 	if err = json.NewDecoder(req).Decode(&args); err != nil {

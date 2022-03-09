@@ -2769,12 +2769,11 @@ func TestWallet_ProposePresentation(t *testing.T) {
 		connRec, err := connection.NewRecorder(mockctx)
 		require.NoError(t, err)
 
-		record := &connection.Record{
+		record := &service.ConnectionRecord{
 			ConnectionID:   sampleConnID,
 			MyDID:          myDID,
 			TheirDID:       theirDID,
 			DIDCommVersion: service.V2,
-			State:          connection.StateNameCompleted,
 		}
 
 		err = connRec.SaveConnectionRecord(record)

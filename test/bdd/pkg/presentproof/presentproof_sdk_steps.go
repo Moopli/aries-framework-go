@@ -16,7 +16,8 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/google/uuid"
 
-	"github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
+	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
+
 	"github.com/hyperledger/aries-framework-go/pkg/client/presentproof"
 	"github.com/hyperledger/aries-framework-go/pkg/crypto"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
@@ -230,7 +231,7 @@ func (a *SDKSteps) sendProposePresentation(prover, verifier string) error {
 
 	conn.DIDCommVersion = service.V1
 
-	_, err = a.clients[prover].SendProposePresentation(&presentproof.ProposePresentation{}, conn.Record)
+	_, err = a.clients[prover].SendProposePresentation(&presentproof.ProposePresentation{}, conn)
 
 	return err
 }
@@ -243,7 +244,7 @@ func (a *SDKSteps) sendProposePresentationV3(prover, verifier string) error {
 
 	conn.DIDCommVersion = service.V2
 
-	_, err = a.clients[prover].SendProposePresentation(&presentproof.ProposePresentation{}, conn.Record)
+	_, err = a.clients[prover].SendProposePresentation(&presentproof.ProposePresentation{}, conn)
 
 	return err
 }
@@ -258,7 +259,7 @@ func (a *SDKSteps) sendRequestPresentation(agent1, agent2 string) error {
 
 	_, err = a.clients[agent1].SendRequestPresentation(&presentproof.RequestPresentation{
 		WillConfirm: true,
-	}, conn.Record)
+	}, conn)
 
 	return err
 }
@@ -273,7 +274,7 @@ func (a *SDKSteps) sendRequestPresentationV3(agent1, agent2 string) error {
 
 	_, err = a.clients[agent1].SendRequestPresentation(&presentproof.RequestPresentation{
 		WillConfirm: true,
-	}, conn.Record)
+	}, conn)
 
 	return err
 }
@@ -321,7 +322,7 @@ func (a *SDKSteps) sendRequestPresentationDefinition(agent1, agent2 string) erro
 			},
 		}},
 		WillConfirm: true,
-	}, conn.Record)
+	}, conn)
 
 	return err
 }
@@ -364,7 +365,7 @@ func (a *SDKSteps) sendRequestPresentationDefinitionV3(agent1, agent2 string) er
 			},
 		}},
 		WillConfirm: true,
-	}, conn.Record)
+	}, conn)
 
 	return err
 }
@@ -863,7 +864,7 @@ func (a *SDKSteps) getDIDs(agent1, agent2 string) (string, string, error) {
 	return conn.MyDID, conn.TheirDID, nil
 }
 
-func (a *SDKSteps) getConnection(agent1, agent2 string) (*didexchange.Connection, error) {
+func (a *SDKSteps) getConnection(agent1, agent2 string) (*service.ConnectionRecord, error) {
 	if err := a.createClient(agent1); err != nil {
 		return nil, err
 	}
@@ -872,19 +873,19 @@ func (a *SDKSteps) getConnection(agent1, agent2 string) (*didexchange.Connection
 		return nil, err
 	}
 
-	didexClient, ok := a.bddContext.DIDExchangeClients[agent1]
+	connClient, ok := a.bddContext.ConnectionClients[agent1]
 	if !ok {
 		var err error
 
-		didexClient, err = didexchange.New(a.bddContext.AgentCtx[agent1])
+		connClient, err = connection.New(a.bddContext.AgentCtx[agent1])
 		if err != nil {
 			return nil, err
 		}
 
-		a.bddContext.DIDExchangeClients[agent1] = didexClient
+		a.bddContext.ConnectionClients[agent1] = connClient
 	}
 
-	connections, err := didexClient.QueryConnections(&didexchange.QueryConnectionsParams{})
+	connections, err := connClient.Query(&connection.QueryParams{})
 	if err != nil {
 		return nil, err
 	}

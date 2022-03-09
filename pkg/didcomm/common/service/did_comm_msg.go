@@ -103,7 +103,7 @@ func ParseDIDCommMsgMap(payload []byte) (DIDCommMsgMap, error) {
 
 // IsDIDCommV2 returns true iff the message is a DIDComm/v2 message, false iff the message is a DIDComm/v1 message,
 // and an error if neither case applies.
-func IsDIDCommV2(msg *DIDCommMsgMap) (bool, error) {
+func IsDIDCommV2(msg *DIDCommMsgMap) bool {
 	_, hasIDV2 := (*msg)["id"]
 	_, hasTypeV2 := (*msg)["type"]
 	// TODO: some present-proof v3 messages forget to include the body, enable the hasBodyV2 check when that is fixed.
@@ -111,17 +111,10 @@ func IsDIDCommV2(msg *DIDCommMsgMap) (bool, error) {
 	// _, hasBodyV2 := (*msg)["body"]
 
 	if hasIDV2 || hasTypeV2 /* && hasBodyV2 */ {
-		return true, nil
+		return true
 	}
 
-	_, hasIDV1 := (*msg)["@id"]
-	_, hasTypeV1 := (*msg)["@type"]
-
-	if hasIDV1 || hasTypeV1 {
-		return false, nil
-	}
-
-	return false, fmt.Errorf("not a valid didcomm v1 or v2 message")
+	return false
 }
 
 // NewDIDCommMsgMap converts structure(model) to DIDCommMsgMap.

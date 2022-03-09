@@ -306,11 +306,6 @@ func (s *Service) AcceptInvitation(i *Invitation, opts ...AcceptOption) (string,
 	logger.Debugf("oob/2.0 request body or Goal code is empty, oobv2.AcceptInvitation() is done but no" +
 		"target service triggered, generating a new peer DID for the first valid attachment and return it")
 
-	senderDoc, err := s.vdrRegistry.Resolve(i.From)
-	if err != nil {
-		return "", fmt.Errorf("oob/2.0 failed to resolve inviter DID: %w", err)
-	}
-
 	myDID, err := s.vdrRegistry.Create(peer.DIDMethod, newDID)
 	if err != nil {
 		return "", fmt.Errorf("oob/2.0 creating new DID via VDR failed: %w", err)
@@ -323,31 +318,18 @@ func (s *Service) AcceptInvitation(i *Invitation, opts ...AcceptOption) (string,
 		}
 	}
 
-	destination, err := service.CreateDestination(senderDoc.DIDDocument)
-	if err != nil {
-		return "", fmt.Errorf("oob/2.0 failed to create destination: %w", err)
-	}
-
 	initialState, err := peer.UnsignedGenesisDelta(myDID.DIDDocument)
 	if err != nil {
 		return "", fmt.Errorf("marshalling peer DID into initialState: %w", err)
 	}
 
-	connRecord := &connection.Record{
+	connRecord := &service.ConnectionRecord{
 		ConnectionID:        uuid.New().String(),
 		ParentThreadID:      i.ID,
-		State:               connection.StateNameCompleted,
-		InvitationID:        i.ID,
-		ServiceEndPoint:     destination.ServiceEndpoint,
-		RecipientKeys:       destination.RecipientKeys,
-		RoutingKeys:         destination.RoutingKeys,
 		TheirLabel:          i.Label,
 		TheirDID:            i.From,
 		MyDID:               myDID.DIDDocument.ID,
-		Namespace:           connection.MyNSPrefix,
-		MediaTypeProfiles:   s.myMediaTypeProfiles,
-		Implicit:            true,
-		InvitationDID:       myDID.DIDDocument.ID,
+		MediaTypeProfiles:   intersect(s.myMediaTypeProfiles, i.Body.Accept),
 		DIDCommVersion:      service.V2,
 		PeerDIDInitialState: initialState,
 	}
@@ -669,4 +651,19 @@ func list2set(list []string) map[string]struct{} {
 	}
 
 	return set
+}
+
+// intersect returns the intersection of two lists of strings, in the order of list1.
+func intersect(list1, list2 []string) []string {
+	set := list2set(list2)
+
+	var out []string
+
+	for _, s := range list1 {
+		if _, ok := set[s]; ok {
+			out = append(out, s)
+		}
+	}
+
+	return out
 }

@@ -240,7 +240,7 @@ func (q *queryArgs) buildPath() string {
 
 // GetConnection returns a connection between agents.
 func (s *ControllerSteps) GetConnection(receiver, sender string, opts ...QueryOpt) (*didexchange.Connection, error) {
-	args := &queryArgs{State: stateCompleted}
+	args := &queryArgs{}
 
 	for _, fn := range opts {
 		fn(args)
@@ -253,13 +253,14 @@ func (s *ControllerSteps) GetConnection(receiver, sender string, opts ...QueryOp
 
 	var response didexcmd.QueryConnectionsResponse
 
+	// TODO: debug why /connections/query doesn't return the connection
 	err := util.SendHTTP(http.MethodGet, controllerURL+connections+args.buildPath(), nil, &response)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query connections: %w", err)
 	}
 
 	for _, c := range response.Results {
-		if c.State != stateCompleted {
+		if c.State != stateCompleted && (c.MyDID == "" || c.TheirDID == "") {
 			continue
 		}
 

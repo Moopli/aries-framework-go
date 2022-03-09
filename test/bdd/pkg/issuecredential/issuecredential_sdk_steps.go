@@ -14,7 +14,7 @@ import (
 
 	"github.com/cucumber/godog"
 
-	"github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
+	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
 	"github.com/hyperledger/aries-framework-go/pkg/client/issuecredential"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/decorator"
@@ -155,7 +155,7 @@ func (a *SDKSteps) SendsOffer(agent1, agent2 string) error {
 		return err
 	}
 
-	piid, err := a.clients[agent1].SendOffer(&issuecredential.OfferCredential{}, conn.Record)
+	piid, err := a.clients[agent1].SendOffer(&issuecredential.OfferCredential{}, conn)
 	if err != nil {
 		return fmt.Errorf("send offer: %w", err)
 	}
@@ -176,7 +176,7 @@ func (a *SDKSteps) SendsOfferV3(agent1, agent2 string) error {
 
 	conn.DIDCommVersion = service.V2
 
-	piid, err := a.clients[agent1].SendOffer(&issuecredential.OfferCredential{}, conn.Record)
+	piid, err := a.clients[agent1].SendOffer(&issuecredential.OfferCredential{}, conn)
 	if err != nil {
 		return fmt.Errorf("send offer: %w", err)
 	}
@@ -194,7 +194,7 @@ func (a *SDKSteps) sendsProposal(agent1, agent2 string) error {
 		return err
 	}
 
-	piid, err := a.clients[agent1].SendProposal(&issuecredential.ProposeCredential{}, conn.Record)
+	piid, err := a.clients[agent1].SendProposal(&issuecredential.ProposeCredential{}, conn)
 	if err != nil {
 		return fmt.Errorf("send proposal: %w", err)
 	}
@@ -214,7 +214,7 @@ func (a *SDKSteps) sendsProposalV3(agent1, agent2 string) error {
 
 	conn.DIDCommVersion = service.V2
 
-	piid, err := a.clients[agent1].SendProposal(&issuecredential.ProposeCredential{}, conn.Record)
+	piid, err := a.clients[agent1].SendProposal(&issuecredential.ProposeCredential{}, conn)
 	if err != nil {
 		return fmt.Errorf("send proposal: %w", err)
 	}
@@ -232,7 +232,7 @@ func (a *SDKSteps) sendsRequest(agent1, agent2 string) error {
 		return err
 	}
 
-	piid, err := a.clients[agent1].SendRequest(&issuecredential.RequestCredential{}, conn.Record)
+	piid, err := a.clients[agent1].SendRequest(&issuecredential.RequestCredential{}, conn)
 	if err != nil {
 		return fmt.Errorf("send request: %w", err)
 	}
@@ -252,7 +252,7 @@ func (a *SDKSteps) sendsRequestV3(agent1, agent2 string) error {
 
 	conn.DIDCommVersion = service.V2
 
-	piid, err := a.clients[agent1].SendRequest(&issuecredential.RequestCredential{}, conn.Record)
+	piid, err := a.clients[agent1].SendRequest(&issuecredential.RequestCredential{}, conn)
 	if err != nil {
 		return fmt.Errorf("send request: %w", err)
 	}
@@ -502,7 +502,7 @@ func (a *SDKSteps) CreateClient(agentID string) error {
 	return client.RegisterActionEvent(a.actions[agentID])
 }
 
-func (a *SDKSteps) getConnection(agent1, agent2 string) (*didexchange.Connection, error) {
+func (a *SDKSteps) getConnection(agent1, agent2 string) (*service.ConnectionRecord, error) {
 	if err := a.CreateClient(agent1); err != nil {
 		return nil, err
 	}
@@ -511,7 +511,7 @@ func (a *SDKSteps) getConnection(agent1, agent2 string) (*didexchange.Connection
 		return nil, err
 	}
 
-	connections, err := a.bddContext.DIDExchangeClients[agent1].QueryConnections(&didexchange.QueryConnectionsParams{})
+	connections, err := a.bddContext.ConnectionClients[agent1].Query(&connection.QueryParams{})
 	if err != nil {
 		return nil, err
 	}

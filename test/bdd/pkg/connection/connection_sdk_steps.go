@@ -13,7 +13,6 @@ import (
 	"github.com/google/uuid"
 
 	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
-	"github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/did"
 	"github.com/hyperledger/aries-framework-go/pkg/framework/context"
@@ -70,12 +69,12 @@ func (s *SDKSteps) connectAgentToOther(agent, other string) error {
 
 	agentCtx := s.bddContext.AgentCtx[agent]
 
-	didExClient, err := didexchange.New(agentCtx)
+	connClient, err := connection.New(agentCtx)
 	if err != nil {
 		return err
 	}
 
-	s.bddContext.DIDExchangeClients[agent] = didExClient
+	s.bddContext.ConnectionClients[agent] = connClient
 
 	agentClient, err := connection.New(agentCtx)
 	if err != nil {
@@ -101,12 +100,12 @@ func (s *SDKSteps) rotateDID(agentID, otherAgent string) error { // nolint:gocyc
 	myDoc := s.bddContext.PublicDIDDocs[agentID]
 	theirDoc := s.bddContext.PublicDIDDocs[otherAgent]
 
-	didExClient, err := didexchange.New(agentCtx)
+	connClient, err := connection.New(agentCtx)
 	if err != nil {
 		return err
 	}
 
-	conns, err := didExClient.QueryConnections(&didexchange.QueryConnectionsParams{
+	conns, err := connClient.Query(&connection.QueryParams{
 		MyDID:    myDoc.ID,
 		TheirDID: theirDoc.ID,
 	})
@@ -146,12 +145,7 @@ func (s *SDKSteps) rotateDID(agentID, otherAgent string) error { // nolint:gocyc
 		return fmt.Errorf("expected a DID doc to rotate to")
 	}
 
-	client, err := connection.New(agentCtx)
-	if err != nil {
-		return fmt.Errorf("creating connection client: %w", err)
-	}
-
-	newDID, err := client.RotateDID(connID, authKID, connection.WithNewDID(newDoc.ID))
+	newDID, err := connClient.RotateDID(connID, authKID, connection.WithNewDID(newDoc.ID))
 	if err != nil {
 		return fmt.Errorf("rotate did: %w", err)
 	}
@@ -198,5 +192,19 @@ func (s *SDKSteps) createConnection(agentCtx *context.Provider, myDID string, ta
 		return "", fmt.Errorf("creating connection recorder: %w", err)
 	}
 
-	return conn.ConnectionID, connRecorder.SaveConnectionRecord(conn)
+	return conn.ConnectionID, connRecorder.SaveDIDExConnectionRecord(conn)
+}
+
+// ConvertToPersistentRecord converts a connection.Record to service.ConnectionRecord.
+func ConvertToPersistentRecord(record *connection2.Record) *service.ConnectionRecord {
+	return &service.ConnectionRecord{
+		ConnectionID:      record.ConnectionID,
+		ParentThreadID:    record.ParentThreadID,
+		TheirLabel:        record.TheirLabel,
+		TheirDID:          record.TheirDID,
+		MyDID:             record.MyDID,
+		InvitationID:      record.InvitationID,
+		MediaTypeProfiles: record.MediaTypeProfiles,
+		DIDCommVersion:    record.DIDCommVersion,
+	}
 }

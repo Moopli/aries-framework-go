@@ -352,63 +352,50 @@ func TestDIDCommMsgMap_ToJsonRawStruct(t *testing.T) {
 
 func TestIsDIDCommV2(t *testing.T) {
 	tests := []struct {
-		name   string
-		msg    DIDCommMsgMap
-		res    bool
-		errStr string
+		name string
+		msg  DIDCommMsgMap
+		res  bool
 	}{
 		{
 			name: "has v1 ID",
 			msg: DIDCommMsgMap{
 				"@id": "foo",
 			},
-			res:    false,
-			errStr: "",
+			res: false,
 		},
 		{
 			name: "has v1 type",
 			msg: DIDCommMsgMap{
 				"@type": "foo",
 			},
-			res:    false,
-			errStr: "",
+			res: false,
 		},
 		{
 			name: "has v2 ID",
 			msg: DIDCommMsgMap{
 				"id": "foo",
 			},
-			res:    true,
-			errStr: "",
+			res: true,
 		},
 		{
 			name: "has v2 type",
 			msg: DIDCommMsgMap{
 				"type": "foo",
 			},
-			res:    true,
-			errStr: "",
+			res: true,
 		},
 		{
-			name:   "error on empty message",
-			msg:    DIDCommMsgMap{},
-			res:    false,
-			errStr: "not a valid didcomm v1 or v2 message",
+			name: "error on empty message",
+			msg:  DIDCommMsgMap{},
+			res:  false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			res, err := IsDIDCommV2(&tc.msg)
+			res := IsDIDCommV2(&tc.msg)
 
 			require.Equal(t, tc.res, res)
-
-			if tc.errStr == "" {
-				require.NoError(t, err)
-			} else {
-				require.Error(t, err)
-				require.Contains(t, err.Error(), tc.errStr)
-			}
 		})
 	}
 }

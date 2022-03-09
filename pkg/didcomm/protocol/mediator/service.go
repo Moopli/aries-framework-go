@@ -128,8 +128,8 @@ type callback struct {
 
 type connections interface {
 	GetConnectionIDByDIDs(string, string) (string, error)
-	GetConnectionRecord(string) (*connection.Record, error)
-	GetConnectionRecordByDIDs(myDID string, theirDID string) (*connection.Record, error)
+	GetConnectionRecord(string) (*service.ConnectionRecord, error)
+	GetConnectionRecordByDIDs(myDID string, theirDID string) (*service.ConnectionRecord, error)
 }
 
 // Service for Route Coordination protocol.
@@ -581,7 +581,7 @@ func (s *Service) Register(connectionID string, options ...ClientOption) error {
 	)
 }
 
-func (s *Service) doRegistration(record *connection.Record, req *Request, timeout time.Duration) error {
+func (s *Service) doRegistration(record *service.ConnectionRecord, req *Request, timeout time.Duration) error {
 	// check if router is already registered
 	err := s.ensureConnectionExists(record.ConnectionID)
 	if err == nil {
@@ -844,7 +844,7 @@ func (s *Service) saveRouterConfig(connID string, conf *config) error {
 	return s.routeStore.Put(fmt.Sprintf(routeConfigDataKey, connID), bytes)
 }
 
-func (s *Service) getConnection(routerConnID string) (*connection.Record, error) {
+func (s *Service) getConnection(routerConnID string) (*service.ConnectionRecord, error) {
 	conn, err := s.connectionLookup.GetConnectionRecord(routerConnID)
 	if err != nil {
 		if errors.Is(err, storage.ErrDataNotFound) {

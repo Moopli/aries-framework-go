@@ -80,57 +80,66 @@ const (
 	initialStateParam = "initialState"
 )
 
+type inboundMessageType int
+
+const (
+	inboundOther inboundMessageType = iota
+	inboundInvitationAcceptance
+	inboundRotation
+)
+
 // HandleInboundMessage processes did rotation and invitee connection creation on inbound messages.
 func (h *DIDCommMessageMiddleware) HandleInboundMessage( // nolint:gocyclo,funlen
 	msg didcomm.DIDCommMsgMap,
 	theirDID, myDID string,
-) error {
-	// TODO: clean up connection record management across all the handler methods. Currently correct but messy.
-	// TODO: clean up some logic:
-	//  - inbound invitation acceptance cannot be a rotation
-	// GetConnectionRecordByDIDs(myDID, theirDID)
-	// if no connection, create connection
-	rec, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
+	mtps []string, // nolint:unparam
+) (*didcomm.ConnectionRecord, error) {
+	msgType, err := h.getInboundMessageType(msg, myDID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	isV2, err := didcomm.IsDIDCommV2(&msg)
-	if !isV2 || err != nil {
-		return err
-	}
+	isV2 := didcomm.IsDIDCommV2(&msg)
+
+	var rec *didcomm.ConnectionRecord
 
 	var updatedConnRec bool
 
-	// if they don't rotate: GetConnectionRecordByTheirDID(theirDID)
-	// if they do rotate: GetConnectionRecordByTheirDID(theirOldDID), GetConnectionRecordByTheirDID(theirNewDID)
-	rec2, stepUpdated, err := h.handleInboundRotate(msg, theirDID, myDID, rec)
-	if err != nil {
-		return err
-	}
-
-	updatedConnRec = updatedConnRec || stepUpdated
-
-	if rec2 != nil {
-		rec = rec2
-	}
-
-	if rec == nil {
-		rec, err = h.connStore.GetConnectionRecordByTheirDID(theirDID)
+	switch msgType {
+	case inboundInvitationAcceptance:
+		// GetConnectionRecordByDIDs(myDID, theirDID)
+		// if no connection, return new (not-yet-saved) connection record
+		// TODO: use the inbound Media Type Profile for the mtp when creating a new connection
+		rec, updatedConnRec, err = h.handleInboundInvitationAcceptance(theirDID, myDID)
 		if err != nil {
-			return err
+			return nil, err
+		}
+	case inboundRotation:
+		// GetConnectionRecordByTheirDID(theirOldDID), GetConnectionRecordByTheirDID(theirNewDID)
+		rec, updatedConnRec, err = h.handleInboundRotate(msg, theirDID, myDID)
+		if err != nil {
+			return nil, err
 		}
 	}
 
-	rec2, stepUpdated, err = h.handleInboundRotateAck(myDID, rec)
-	if err != nil {
-		return err
-	}
+	if isV2 {
+		if rec == nil {
+			rec, err = h.connStore.GetConnectionRecordByTheirDID(theirDID)
+			if err != nil {
+				return nil, err
+			}
+		}
 
-	updatedConnRec = updatedConnRec || stepUpdated
+		rec2, stepUpdated, err := h.handleInboundRotateAck(myDID, rec)
+		if err != nil {
+			return nil, err
+		}
 
-	if rec2 != nil {
-		rec = rec2
+		updatedConnRec = updatedConnRec || stepUpdated
+
+		if rec2 != nil {
+			rec = rec2
+		}
 	}
 
 	// handle inbound ack of peer DID
@@ -142,21 +151,21 @@ func (h *DIDCommMessageMiddleware) HandleInboundMessage( // nolint:gocyclo,funle
 	if updatedConnRec && rec != nil {
 		err = h.connStore.SaveConnectionRecord(rec)
 		if err != nil {
-			return fmt.Errorf("updating connection: %w", err)
+			return nil, fmt.Errorf("updating connection: %w", err)
 		}
 	}
 
-	return nil
+	return rec, nil
 }
 
 // HandleOutboundMessage processes an outbound message.
-func (h *DIDCommMessageMiddleware) HandleOutboundMessage(msg didcomm.DIDCommMsgMap, rec *connection.Record,
+func (h *DIDCommMessageMiddleware) HandleOutboundMessage(msg didcomm.DIDCommMsgMap, rec *didcomm.ConnectionRecord,
 ) didcomm.DIDCommMsgMap {
 	if rec.PeerDIDInitialState != "" {
 		msg[fromDIDJSONKey] = rec.MyDID + "?" + initialStateParam + "=" + rec.PeerDIDInitialState
 	}
 
-	if isV2, err := didcomm.IsDIDCommV2(&msg); !isV2 || err != nil {
+	if isV2 := didcomm.IsDIDCommV2(&msg); !isV2 {
 		return msg
 	}
 
@@ -164,7 +173,53 @@ func (h *DIDCommMessageMiddleware) HandleOutboundMessage(msg didcomm.DIDCommMsgM
 		msg[fromPriorJSONKey] = rec.MyDIDRotation.FromPrior
 	}
 
+	// the first message sent using didcomm v2 should contain the invitation ID as pthid
+	if rec.DIDCommVersion == didcomm.V2 && rec.ParentThreadID != "" {
+		pthid, hasPthid := msg["pthid"].(string)
+
+		thid, e := msg.ThreadID()
+		if e == nil && msg.ID() == thid && // message is the start of a new thread
+			(!hasPthid || pthid == "") { // message doesn't have a pthid
+			msg["pthid"] = rec.ParentThreadID
+		}
+	}
+
 	return msg
+}
+
+func (h *DIDCommMessageMiddleware) getInboundMessageType(msg didcomm.DIDCommMsgMap, recipientDID string,
+) (inboundMessageType, error) {
+	isV2 := didcomm.IsDIDCommV2(&msg)
+
+	if _, theyRotate := msg[fromPriorJSONKey]; theyRotate {
+		return inboundRotation, nil
+	}
+
+	didParsed, err := did.Parse(recipientDID)
+	if err != nil {
+		if !isV2 {
+			return inboundOther, nil
+		}
+
+		return inboundOther, fmt.Errorf("parsing inbound recipient DID: %w", err)
+	}
+
+	if didParsed.Method == peer.DIDMethod { // TODO any more exception cases like peer?
+		// can't be an invitation DID
+		return inboundOther, nil
+	}
+
+	inv := &invitationStub{}
+
+	err = h.connStore.GetOOBv2Invitation(recipientDID, inv)
+	if err == nil {
+		return inboundInvitationAcceptance, nil
+	} else if errors.Is(err, storage.ErrDataNotFound) {
+		// if there's no invitation, this message isn't an acceptance
+		return inboundOther, nil
+	}
+
+	return inboundOther, err
 }
 
 type invitationStub struct {
@@ -173,16 +228,16 @@ type invitationStub struct {
 }
 
 func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(senderDID, recipientDID string,
-) (*connection.Record, error) {
+) (*didcomm.ConnectionRecord, bool, error) {
 	didParsed, err := did.Parse(recipientDID)
 	if err != nil {
 		logger.Warnf("failed to parse inbound recipient DID: %s", err.Error())
-		return nil, nil
+		return nil, false, nil
 	}
 
 	if didParsed.Method == peer.DIDMethod { // TODO any more exception cases like peer?
 		// can't be an invitation DID
-		return nil, nil
+		return nil, false, nil
 	}
 
 	inv := &invitationStub{}
@@ -190,41 +245,34 @@ func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(senderDID, 
 	err = h.connStore.GetOOBv2Invitation(recipientDID, inv)
 	if errors.Is(err, storage.ErrDataNotFound) {
 		// if there's no invitation, this message isn't an acceptance
-		return nil, nil
+		return nil, false, nil
 	} else if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	rec, err := h.connStore.GetConnectionRecordByDIDs(recipientDID, senderDID)
 	if err == nil {
-		return rec, nil
+		return rec, false, nil
 	} else if !errors.Is(err, storage.ErrDataNotFound) {
-		return rec, fmt.Errorf("failed to get connection record: %w", err)
+		return nil, false, fmt.Errorf("failed to get connection record: %w", err)
 	}
 
 	// if we created an invitation with this DID, and have no connection, we create a connection.
 
-	rec = &connection.Record{
+	rec = &didcomm.ConnectionRecord{
 		ConnectionID:      uuid.New().String(),
 		MyDID:             recipientDID,
 		TheirDID:          senderDID,
 		InvitationID:      inv.ID,
-		State:             connection.StateNameCompleted,
-		Namespace:         connection.MyNSPrefix,
 		MediaTypeProfiles: h.mediaTypeProfiles,
 		DIDCommVersion:    didcomm.V2,
 	}
 
-	err = h.connStore.SaveConnectionRecord(rec)
-	if err != nil {
-		return nil, fmt.Errorf("failed to save new connection: %w", err)
-	}
-
-	return rec, nil
+	return rec, true, nil
 }
 
 // HandleInboundPeerDID checks if an inbound message contains a peer DID, saving the peer DID if so.
-func (h *DIDCommMessageMiddleware) HandleInboundPeerDID(msg didcomm.DIDCommMsgMap) error { // nolint:gocyclo
+func (h *DIDCommMessageMiddleware) HandleInboundPeerDID(msg didcomm.DIDCommMsgMap) error {
 	from, ok := msg[fromDIDJSONKey].(string)
 	if !ok {
 		return nil
@@ -233,8 +281,8 @@ func (h *DIDCommMessageMiddleware) HandleInboundPeerDID(msg didcomm.DIDCommMsgMa
 	didURL, err := did.ParseDIDURL(from)
 	if err != nil {
 		// special case - some didcomm v1 messages might have a "from" field, which isn't necessarily a DID
-		if isV2, e := didcomm.IsDIDCommV2(&msg); !isV2 || e != nil {
-			return nil // nolint:nilerr // ignore error from IsDIDCommV2, simply skip unusual unexpected messages.
+		if isV2 := didcomm.IsDIDCommV2(&msg); !isV2 {
+			return nil
 		}
 
 		return fmt.Errorf("parsing their DID: %w", err)
@@ -273,11 +321,10 @@ func (h *DIDCommMessageMiddleware) HandleInboundPeerDID(msg didcomm.DIDCommMsgMa
 	return nil
 }
 
-func (h *DIDCommMessageMiddleware) handleInboundRotate( // nolint:funlen,gocyclo
+func (h *DIDCommMessageMiddleware) handleInboundRotate( // nolint:funlen
 	msg didcomm.DIDCommMsgMap,
 	senderDID, recipientDID string,
-	recIn *connection.Record,
-) (*connection.Record, bool, error) {
+) (*didcomm.ConnectionRecord, bool, error) {
 	var (
 		jws            *jose.JSONWebSignature
 		payload        *rotatePayload
@@ -288,7 +335,7 @@ func (h *DIDCommMessageMiddleware) handleInboundRotate( // nolint:funlen,gocyclo
 
 	fromPriorInterface, theyRotate := msg[fromPriorJSONKey]
 	if !theyRotate {
-		return recIn, false, nil
+		return nil, false, nil
 	}
 
 	fromPrior, ok := fromPriorInterface.(string)
@@ -315,7 +362,7 @@ func (h *DIDCommMessageMiddleware) handleInboundRotate( // nolint:funlen,gocyclo
 
 	rec, err := h.connStore.GetConnectionRecordByDIDs(recipientDID, theirOldDID)
 	if err != nil {
-		_, err = h.connStore.GetConnectionRecordByDIDs(recipientDID, theirNewDID)
+		rec, err = h.connStore.GetConnectionRecordByDIDs(recipientDID, theirNewDID)
 		if err == nil {
 			// if we have a connection under their new DID, then we've already rotated.
 			alreadyRotated = true
@@ -341,15 +388,11 @@ func (h *DIDCommMessageMiddleware) handleInboundRotate( // nolint:funlen,gocyclo
 		updatedConnRec = true
 	}
 
-	if rec != nil {
-		recIn = rec
-	}
-
-	return recIn, updatedConnRec, nil
+	return rec, updatedConnRec, nil
 }
 
-func (h *DIDCommMessageMiddleware) handleInboundRotateAck(recipientDID string, rec *connection.Record,
-) (*connection.Record, bool, error) {
+func (h *DIDCommMessageMiddleware) handleInboundRotateAck(recipientDID string, rec *didcomm.ConnectionRecord,
+) (*didcomm.ConnectionRecord, bool, error) {
 	var updatedConnRec bool
 
 	// if we performed a did rotation, check if they acknowledge it
@@ -392,7 +435,7 @@ func (h *DIDCommMessageMiddleware) RotateConnectionDID(connectionID, signingKID,
 		return fmt.Errorf("creating did rotation from_prior: %w", err)
 	}
 
-	record.MyDIDRotation = &connection.DIDRotationRecord{
+	record.MyDIDRotation = &didcomm.DIDRotationRecord{
 		NewDID:    newDID,
 		OldDID:    oldDID,
 		FromPrior: fromPrior,

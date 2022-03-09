@@ -22,7 +22,6 @@ import (
 	dispatchermocks "github.com/hyperledger/aries-framework-go/pkg/internal/gomocks/didcomm/dispatcher"
 	messengermocks "github.com/hyperledger/aries-framework-go/pkg/internal/gomocks/didcomm/messenger"
 	protocolmocks "github.com/hyperledger/aries-framework-go/pkg/internal/gomocks/didcomm/protocol/presentproof"
-	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 )
 
 // payload represents a transport message structure.
@@ -157,7 +156,7 @@ func ExampleClient_SendRequestPresentation() {
 		}
 	}()
 
-	conn := connection.Record{
+	conn := service.ConnectionRecord{
 		ConnectionID: uuid.New().String(),
 		MyDID:        Alice,
 		TheirDID:     Bob,
@@ -232,7 +231,7 @@ func ExampleClient_SendRequestPresentation_using_v3() {
 		}
 	}()
 
-	conn := connection.Record{
+	conn := service.ConnectionRecord{
 		ConnectionID:   uuid.New().String(),
 		MyDID:          Alice,
 		TheirDID:       Bob,
@@ -308,7 +307,7 @@ func ExampleClient_SendRequestPresentation_third() {
 		}
 	}()
 
-	conn := connection.Record{
+	conn := service.ConnectionRecord{
 		ConnectionID: uuid.New().String(),
 		MyDID:        Alice,
 		TheirDID:     Bob,
@@ -384,7 +383,7 @@ func ExampleClient_SendRequestPresentation_using_v3_second() {
 		}
 	}()
 
-	conn := connection.Record{
+	conn := service.ConnectionRecord{
 		ConnectionID:   uuid.New().String(),
 		MyDID:          Alice,
 		TheirDID:       Bob,
@@ -479,7 +478,7 @@ func ExampleClient_SendProposePresentation() {
 		}
 	}()
 
-	conn := connection.Record{
+	conn := service.ConnectionRecord{
 		ConnectionID: uuid.New().String(),
 		MyDID:        Alice,
 		TheirDID:     Bob,
@@ -577,7 +576,7 @@ func ExampleClient_SendProposePresentation_using_v3() {
 		}
 	}()
 
-	conn := connection.Record{
+	conn := service.ConnectionRecord{
 		ConnectionID:   uuid.New().String(),
 		MyDID:          Alice,
 		TheirDID:       Bob,

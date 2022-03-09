@@ -17,7 +17,8 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/google/uuid"
 
-	didexClient "github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
+	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
+
 	issuecredentialclient "github.com/hyperledger/aries-framework-go/pkg/client/issuecredential"
 	"github.com/hyperledger/aries-framework-go/pkg/client/outofband"
 	"github.com/hyperledger/aries-framework-go/pkg/common/log"
@@ -175,7 +176,7 @@ func (i *IssuanceSDKDIDCommV1Steps) sendsProposalV2(holderName, issuerName strin
 		return err
 	}
 
-	piid, err := i.issueCredentialClients[holderName].SendProposal(&proposeCredentialMsg, connection.Record)
+	piid, err := i.issueCredentialClients[holderName].SendProposal(&proposeCredentialMsg, connection)
 	if err != nil {
 		return fmt.Errorf("failed to send proposal: %w", err)
 	}
@@ -436,8 +437,8 @@ func (i *IssuanceSDKDIDCommV1Steps) getActionIDAndInvitationID(agent string) (st
 	}
 }
 
-func (i *IssuanceSDKDIDCommV1Steps) getConnection(from, to string) (*didexClient.Connection, error) {
-	var foundConnection *didexClient.Connection
+func (i *IssuanceSDKDIDCommV1Steps) getConnection(from, to string) (*service.ConnectionRecord, error) {
+	var foundConnection *service.ConnectionRecord
 
 	// It can take some time before the DID actually gets saved from a previous step,
 	// so we retry if record is found but the "to" DID is missing.
@@ -447,14 +448,18 @@ func (i *IssuanceSDKDIDCommV1Steps) getConnection(from, to string) (*didexClient
 	err := backoff.Retry(func() error {
 		attemptCount++
 
-		connections, err := i.context.DIDExchangeClients[from].QueryConnections(&didexClient.QueryConnectionsParams{})
+		connections, err := i.context.ConnectionClients[from].Query(&connection.QueryParams{})
 		if err != nil {
 			return backoff.Permanent(fmt.Errorf("%s failed to fetch their connections: %w", from, err))
 		}
 
-		for _, connection := range connections {
-			if connection.TheirLabel == to {
-				if connection.TheirDID == "" {
+		if len(connections) == 0 {
+			return fmt.Errorf("No connections available, retrying attempt %d/%d", attemptCount, maxRetries+1)
+		}
+
+		for _, conn := range connections {
+			if conn.TheirLabel == to {
+				if conn.TheirDID == "" {
 					errMsg := fmt.Sprintf(`[from=%s,to=%s] connection record is missing the "to" DID. `+
 						`Attempt: %d. Max attempts before giving up: %d`,
 						from, to, attemptCount, maxRetries+1)
@@ -463,7 +468,7 @@ func (i *IssuanceSDKDIDCommV1Steps) getConnection(from, to string) (*didexClient
 
 					return errors.New(errMsg)
 				}
-				foundConnection = connection
+				foundConnection = conn
 
 				return nil
 			}

@@ -634,8 +634,8 @@ func TestStatusRequest(t *testing.T) {
 			PackagerValue: &mockPackager{},
 		}
 
-		connRec := &connection.Record{
-			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID, State: "completed",
+		connRec := &service.ConnectionRecord{
+			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID,
 		}
 		connBytes, err := json.Marshal(connRec)
 		require.NoError(t, err)
@@ -679,7 +679,7 @@ func TestStatusRequest(t *testing.T) {
 
 		expected := errors.New("get error")
 		svc.connectionLookup = &connectionsStub{
-			getConnRecord: func(string) (*connection.Record, error) {
+			getConnRecord: func(string) (*service.ConnectionRecord, error) {
 				return nil, expected
 			},
 		}
@@ -703,8 +703,8 @@ func TestStatusRequest(t *testing.T) {
 			PackagerValue: &mockPackager{},
 		}
 
-		connRec := &connection.Record{
-			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID, State: "completed",
+		connRec := &service.ConnectionRecord{
+			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID,
 		}
 		connBytes, err := json.Marshal(connRec)
 		require.NoError(t, err)
@@ -758,8 +758,8 @@ func TestBatchPickup(t *testing.T) {
 			InboundMessageHandlerValue: (&mockTransportProvider{}).InboundMessageHandler(),
 		}
 
-		connRec := &connection.Record{
-			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID, State: "completed",
+		connRec := &service.ConnectionRecord{
+			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID,
 		}
 		connBytes, err := json.Marshal(connRec)
 		require.NoError(t, err)
@@ -805,7 +805,7 @@ func TestBatchPickup(t *testing.T) {
 
 		expected := errors.New("get error")
 		svc.connectionLookup = &connectionsStub{
-			getConnRecord: func(string) (*connection.Record, error) {
+			getConnRecord: func(string) (*service.ConnectionRecord, error) {
 				return nil, expected
 			},
 		}
@@ -830,8 +830,8 @@ func TestBatchPickup(t *testing.T) {
 			PackagerValue: &mockPackager{},
 		}
 
-		connRec := &connection.Record{
-			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID, State: "completed",
+		connRec := &service.ConnectionRecord{
+			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID,
 		}
 		connBytes, err := json.Marshal(connRec)
 		require.NoError(t, err)
@@ -880,7 +880,7 @@ func TestHandleOutbound(t *testing.T) {
 		require.NoError(t, err)
 
 		svc.connectionLookup = &connectionsStub{
-			getConnRecord: func(string) (*connection.Record, error) {
+			getConnRecord: func(string) (*service.ConnectionRecord, error) {
 				return nil, storage.ErrDataNotFound
 			},
 		}
@@ -917,8 +917,8 @@ func TestNoop(t *testing.T) {
 			PackagerValue: &mockPackager{},
 		}
 
-		connRec := &connection.Record{
-			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID, State: "completed",
+		connRec := &service.ConnectionRecord{
+			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID,
 		}
 		connBytes, err := json.Marshal(connRec)
 		require.NoError(t, err)
@@ -951,8 +951,8 @@ func TestNoop(t *testing.T) {
 			PackagerValue: &mockPackager{},
 		}
 
-		connRec := &connection.Record{
-			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID, State: "completed",
+		connRec := &service.ConnectionRecord{
+			ConnectionID: "conn", MyDID: MYDID, TheirDID: THEIRDID,
 		}
 		connBytes, err := json.Marshal(connRec)
 		require.NoError(t, err)
@@ -978,7 +978,7 @@ func TestNoop(t *testing.T) {
 
 		expected := errors.New("get error")
 		svc.connectionLookup = &connectionsStub{
-			getConnRecord: func(string) (*connection.Record, error) {
+			getConnRecord: func(string) (*service.ConnectionRecord, error) {
 				return nil, expected
 			},
 		}
@@ -995,7 +995,7 @@ func TestGetConnection(t *testing.T) {
 		require.NoError(t, err)
 
 		svc.connectionLookup = &connectionsStub{
-			getConnRecord: func(string) (*connection.Record, error) {
+			getConnRecord: func(string) (*service.ConnectionRecord, error) {
 				return nil, storage.ErrDataNotFound
 			},
 		}
@@ -1057,7 +1057,7 @@ func (m *mockPackager) UnpackMessage(encMessage []byte) (*transport.Envelope, er
 
 type connectionsStub struct {
 	getConnIDByDIDs func(string, string) (string, error)
-	getConnRecord   func(string) (*connection.Record, error)
+	getConnRecord   func(string) (*service.ConnectionRecord, error)
 }
 
 func (c *connectionsStub) GetConnectionIDByDIDs(myDID, theirDID string) (string, error) {
@@ -1068,7 +1068,7 @@ func (c *connectionsStub) GetConnectionIDByDIDs(myDID, theirDID string) (string,
 	return "", nil
 }
 
-func (c *connectionsStub) GetConnectionRecord(id string) (*connection.Record, error) {
+func (c *connectionsStub) GetConnectionRecord(id string) (*service.ConnectionRecord, error) {
 	if c.getConnRecord != nil {
 		return c.getConnRecord(id)
 	}

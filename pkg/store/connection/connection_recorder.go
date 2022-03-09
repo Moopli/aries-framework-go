@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 
+	didcomm "github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/spi/storage"
 )
 
@@ -67,8 +68,29 @@ func (c *Recorder) SaveOOBv2Invitation(myDID string, invitation interface{}) err
 	return marshalAndSave(getOOBInvitationV2KeyPrefix()(tagValueFromDIDs(myDID)), invitation, c.store)
 }
 
-// SaveConnectionRecord saves given connection records in underlying store.
-func (c *Recorder) SaveConnectionRecord(record *Record) error {
+// SaveConnectionRecord saves given connection record in underlying store.
+func (c *Recorder) SaveConnectionRecord(record *didcomm.ConnectionRecord) error {
+	if err := marshalAndSave(getConnectionKeyPrefix()(record.ConnectionID),
+		record, c.store, storage.Tag{
+			Name:  getConnectionKeyPrefix()(""),
+			Value: getConnectionKeyPrefix()(record.ConnectionID),
+		},
+		storage.Tag{
+			Name:  bothDIDsTagName,
+			Value: tagValueFromDIDs(record.MyDID, record.TheirDID),
+		},
+		storage.Tag{
+			Name:  theirDIDTagName,
+			Value: tagValueFromDIDs(record.TheirDID),
+		}); err != nil {
+		return fmt.Errorf("save connection record in permanent store: %w", err)
+	}
+
+	return nil
+}
+
+// SaveDIDExConnectionRecord saves given connection record in underlying store.
+func (c *Recorder) SaveDIDExConnectionRecord(record *Record) error {
 	if err := marshalAndSave(getConnectionKeyPrefix()(record.ConnectionID),
 		record, c.protocolStateStore, storage.Tag{
 			Name:  getConnectionKeyPrefix()(""),
@@ -89,24 +111,27 @@ func (c *Recorder) SaveConnectionRecord(record *Record) error {
 	}
 
 	if record.State == StateNameCompleted {
-		if err := marshalAndSave(getConnectionKeyPrefix()(record.ConnectionID),
-			record, c.store, storage.Tag{
-				Name:  getConnectionKeyPrefix()(""),
-				Value: getConnectionKeyPrefix()(record.ConnectionID),
-			},
-			storage.Tag{
-				Name:  bothDIDsTagName,
-				Value: tagValueFromDIDs(record.MyDID, record.TheirDID),
-			},
-			storage.Tag{
-				Name:  theirDIDTagName,
-				Value: tagValueFromDIDs(record.TheirDID),
-			}); err != nil {
-			return fmt.Errorf("save connection record in permanent store: %w", err)
+		persistentRecord := convertToPersistentRecord(record)
+
+		if err := c.SaveConnectionRecord(persistentRecord); err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func convertToPersistentRecord(record *Record) *didcomm.ConnectionRecord {
+	return &didcomm.ConnectionRecord{
+		ConnectionID:      record.ConnectionID,
+		ParentThreadID:    record.ParentThreadID,
+		TheirLabel:        record.TheirLabel,
+		TheirDID:          record.TheirDID,
+		MyDID:             record.MyDID,
+		InvitationID:      record.InvitationID,
+		MediaTypeProfiles: record.MediaTypeProfiles,
+		DIDCommVersion:    record.DIDCommVersion,
+	}
 }
 
 // SaveConnectionRecordWithMappings saves newly created connection record against the connection id in the store
@@ -117,7 +142,7 @@ func (c *Recorder) SaveConnectionRecordWithMappings(record *Record) error {
 		return fmt.Errorf("validation failed while saving connection record with mapping: %w", err)
 	}
 
-	err = c.SaveConnectionRecord(record)
+	err = c.SaveDIDExConnectionRecord(record)
 	if err != nil {
 		return fmt.Errorf("failed to save connection record with mappings: %w", err)
 	}
@@ -157,7 +182,7 @@ func (c *Recorder) SaveNamespaceThreadID(threadID, namespace, connectionID strin
 
 // RemoveConnection removes connection record from the store for given id.
 func (c *Recorder) RemoveConnection(connectionID string) error {
-	record, err := c.GetConnectionRecord(connectionID)
+	record, err := c.GetDIDExConnectionRecord(connectionID)
 	if err != nil {
 		return fmt.Errorf("unable to get connection record: connectionid=%s err=%w", connectionID, err)
 	}

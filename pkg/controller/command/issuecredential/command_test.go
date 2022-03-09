@@ -244,7 +244,7 @@ func TestCommand_SendOffer(t *testing.T) {
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -273,7 +273,7 @@ func TestCommand_SendOffer(t *testing.T) {
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -300,7 +300,7 @@ func TestCommand_SendOffer(t *testing.T) {
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -330,7 +330,7 @@ func TestCommand_SendOffer(t *testing.T) {
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -438,7 +438,7 @@ func TestCommand_SendProposal(t *testing.T) {
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -467,7 +467,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -494,7 +494,7 @@ func TestCommand_SendProposal(t *testing.T) {
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -524,7 +524,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -632,7 +632,7 @@ func TestCommand_SendRequest(t *testing.T) {
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -661,7 +661,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -688,7 +688,7 @@ func TestCommand_SendRequest(t *testing.T) {
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -718,7 +718,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
 
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -1619,7 +1619,7 @@ func mockProvider(ctrl *gomock.Controller, lookup *connection.Lookup) *mocks.Moc
 	return provider
 }
 
-func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connection.Recorder {
+func mockConnectionRecorder(t *testing.T, records ...didcomm.ConnectionRecord) *connection.Recorder {
 	t.Helper()
 
 	storeProv := mockstore.NewMockStoreProvider()
@@ -1637,10 +1637,6 @@ func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connect
 
 		if rec.ConnectionID == "" {
 			rec.ConnectionID = uuid.New().String()
-		}
-
-		if rec.State == "" {
-			rec.State = connection.StateNameCompleted
 		}
 
 		err = recorder.SaveConnectionRecord(&rec)

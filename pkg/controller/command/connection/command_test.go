@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/middleware"
+	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/did"
 	vdrapi "github.com/hyperledger/aries-framework-go/pkg/framework/aries/api/vdr"
 	"github.com/hyperledger/aries-framework-go/pkg/kms"
@@ -188,6 +189,11 @@ func TestCommand_CreateConnectionV2(t *testing.T) {
 
 		prov.VDRegistryValue = &mockvdr.MockVDRegistry{ResolveErr: fmt.Errorf(expectErr)}
 
+		didStore, err := didstore.NewConnectionStore(prov)
+		require.NoError(t, err)
+
+		prov.DIDConnectionStoreValue = didStore
+
 		cmd, err := New(prov)
 		require.NoError(t, err)
 
@@ -215,9 +221,8 @@ func TestCommand_SetConnectionToDIDCommV2(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		cmd, err := New(prov)
@@ -288,11 +293,10 @@ func TestCommand_RotateDID(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
 			MyDID:        myDID,
 			TheirDID:     theirDID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		cmd, err := New(prov)
@@ -335,11 +339,10 @@ func TestCommand_RotateDID(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
 			MyDID:        myDID,
 			TheirDID:     theirDID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		cmd, err := New(prov)
@@ -466,11 +469,10 @@ func TestCommand_RotateDIDGivenConnIDCmd(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connID,
 			MyDID:        myDID,
 			TheirDID:     theirDID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		cmd, err := New(prov)

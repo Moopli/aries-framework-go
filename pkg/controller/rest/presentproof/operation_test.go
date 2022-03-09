@@ -63,7 +63,7 @@ func TestOperation_SendRequestPresentation(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "1",
 			TheirDID:       "2",
 			DIDCommVersion: didcomm.V1,
@@ -104,7 +104,7 @@ func TestOperation_SendRequestPresentationV3(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		lookup := mockConnectionRecorder(t, connection.Record{
+		lookup := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "1",
 			TheirDID:       "2",
 			DIDCommVersion: didcomm.V2,
@@ -143,7 +143,7 @@ func TestOperation_SendProposePresentation(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "1",
 			TheirDID:       "2",
 			DIDCommVersion: didcomm.V1,
@@ -182,7 +182,7 @@ func TestOperation_SendProposePresentationV3(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		lookup := mockConnectionRecorder(t, connection.Record{
+		lookup := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "1",
 			TheirDID:       "2",
 			DIDCommVersion: didcomm.V2,
@@ -548,7 +548,7 @@ func sendRequestToHandler(handler rest.Handler, requestBody io.Reader, path stri
 	return rr.Body, rr.Code, nil
 }
 
-func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connection.Recorder {
+func mockConnectionRecorder(t *testing.T, records ...didcomm.ConnectionRecord) *connection.Recorder {
 	t.Helper()
 
 	storeProv := mockstore.NewMockStoreProvider()
@@ -566,10 +566,6 @@ func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connect
 
 		if rec.ConnectionID == "" {
 			rec.ConnectionID = uuid.New().String()
-		}
-
-		if rec.State == "" {
-			rec.State = connection.StateNameCompleted
 		}
 
 		err = recorder.SaveConnectionRecord(&rec)

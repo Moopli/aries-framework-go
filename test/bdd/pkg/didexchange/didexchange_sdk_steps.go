@@ -15,11 +15,13 @@ import (
 
 	"github.com/cucumber/godog"
 
+	connectionclient "github.com/hyperledger/aries-framework-go/pkg/client/connection"
 	"github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	diddoc "github.com/hyperledger/aries-framework-go/pkg/doc/did"
 	vdrapi "github.com/hyperledger/aries-framework-go/pkg/framework/aries/api/vdr"
 	"github.com/hyperledger/aries-framework-go/pkg/kms"
+	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 	"github.com/hyperledger/aries-framework-go/test/bdd/pkg/context"
 )
 
@@ -216,17 +218,24 @@ func (d *SDKSteps) validateConnection(agentID, connID, stateValue string) error 
 
 	logger.Debugf("Agent[%s] state[%s] connection: \n %s", agentID, stateValue, string(prettyConn))
 
-	if conn.State != stateValue {
-		return fmt.Errorf("state from connection %s not equal %s", conn.State, stateValue)
-	}
-
 	if stateValue == "completed" {
+		if !validateCompletedConnection(conn.Record) {
+			return fmt.Errorf("connection not completed")
+		}
+
 		if err = d.validateResolveDID(agentID, conn.TheirDID); err != nil {
 			return fmt.Errorf("validate resolve DID: %w", err)
 		}
+	} else if conn.State != stateValue {
+		return fmt.Errorf("state from connection %s not equal %s", conn.State, stateValue)
 	}
 
 	return nil
+}
+
+func validateCompletedConnection(rec *connection.Record) bool {
+	return rec.MyDID != "" &&
+		rec.TheirDID != ""
 }
 
 // validateResolveDID verifies if given agent is able to resolve their DID.
@@ -318,12 +327,19 @@ func (d *SDKSteps) CreateDIDExchangeClient(agents string) error {
 			return fmt.Errorf("failed to create new didexchange client: %w", err)
 		}
 
+		// create new connection client
+		connClient, err := connectionclient.New(d.bddContext.AgentCtx[agentID])
+		if err != nil {
+			return fmt.Errorf("failed to create new connection client: %w", err)
+		}
+
 		actionCh := make(chan service.DIDCommAction)
 		if err = didexchangeClient.RegisterActionEvent(actionCh); err != nil {
 			return fmt.Errorf("%s failed to register action event: %w", agentID, err)
 		}
 
 		d.bddContext.DIDExchangeClients[agentID] = didexchangeClient
+		d.bddContext.ConnectionClients[agentID] = connClient
 		// initializes the channel for the agent
 		d.nextAction[agentID] = make(chan struct{ connections []string })
 

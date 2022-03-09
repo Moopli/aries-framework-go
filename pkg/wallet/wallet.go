@@ -1270,7 +1270,7 @@ func (c *Wallet) validateVerificationMethod(didDoc *did.Doc, opts *ProofOptions,
 }
 
 // currently correlating response action by connection due to limitation in current present proof V1 implementation.
-func (c *Wallet) waitForRequestPresentation(ctx context.Context, record *connection.Record) (*service.DIDCommMsgMap, error) { //nolint: lll
+func (c *Wallet) waitForRequestPresentation(ctx context.Context, record *service.ConnectionRecord) (*service.DIDCommMsgMap, error) { //nolint: lll
 	done := make(chan *service.DIDCommMsgMap)
 
 	go func() {
@@ -1307,7 +1307,7 @@ func (c *Wallet) waitForRequestPresentation(ctx context.Context, record *connect
 }
 
 // currently correlating response action by connection due to limitation in current issue credential V1 implementation.
-func (c *Wallet) waitForOfferCredential(ctx context.Context, record *connection.Record) (*service.DIDCommMsgMap, error) { //nolint: lll
+func (c *Wallet) waitForOfferCredential(ctx context.Context, record *service.ConnectionRecord) (*service.DIDCommMsgMap, error) { //nolint: lll
 	done := make(chan *service.DIDCommMsgMap)
 
 	go func() {
@@ -1476,7 +1476,8 @@ func updateProfile(auth string, profile *profile) error {
 	return nil
 }
 
-func prepareInteractionOpts(connRecord *connection.Record, opts *initiateInteractionOpts) *initiateInteractionOpts {
+func prepareInteractionOpts(connRecord *service.ConnectionRecord, opts *initiateInteractionOpts,
+) *initiateInteractionOpts {
 	if opts.from == "" {
 		opts.from = connRecord.TheirDID
 	}

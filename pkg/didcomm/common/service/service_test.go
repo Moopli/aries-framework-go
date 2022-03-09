@@ -233,8 +233,7 @@ func TestNewDIDCommMsgMap(t *testing.T) {
 			_, hasIDV1 := msg["@id"]
 			_, hasIDV2 := msg["id"]
 
-			isV2, err := IsDIDCommV2(&msg)
-			require.NoError(t, err)
+			isV2 := IsDIDCommV2(&msg)
 
 			switch tc.version {
 			case V1:

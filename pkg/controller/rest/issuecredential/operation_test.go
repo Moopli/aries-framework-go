@@ -103,7 +103,7 @@ func TestOperation_SendRequest(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, service.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -140,7 +140,7 @@ func TestOperation_SendRequestV3(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, service.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: service.V2,
@@ -178,7 +178,7 @@ func TestOperation_SendOffer(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, service.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -215,7 +215,7 @@ func TestOperation_SendOfferV3(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		rec := mockConnectionRecorder(t, connection.Record{
+		rec := mockConnectionRecorder(t, service.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: service.V2,
@@ -692,7 +692,7 @@ func (m *mockService) ActionStop(string, error, ...issuecredential.Opt) error {
 
 func (m *mockService) AddMiddleware(...issuecredential.Middleware) {}
 
-func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connection.Recorder {
+func mockConnectionRecorder(t *testing.T, records ...service.ConnectionRecord) *connection.Recorder {
 	t.Helper()
 
 	storeProv := mockstore.NewMockStoreProvider()
@@ -710,10 +710,6 @@ func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connect
 
 		if rec.ConnectionID == "" {
 			rec.ConnectionID = uuid.New().String()
-		}
-
-		if rec.State == "" {
-			rec.State = connection.StateNameCompleted
 		}
 
 		err = recorder.SaveConnectionRecord(&rec)

@@ -538,7 +538,7 @@ func TestHandleDIDEvent(t *testing.T) {
 		// setup connection state
 		r, err := connection.NewRecorder(provider)
 		require.NoError(t, err)
-		err = r.SaveConnectionRecord(&connection.Record{
+		err = r.SaveDIDExConnectionRecord(&connection.Record{
 			ConnectionID:   connID,
 			MyDID:          myDID,
 			TheirDID:       theirDID,
@@ -582,7 +582,7 @@ func TestHandleDIDEvent(t *testing.T) {
 		}
 		r, err := connection.NewRecorder(provider)
 		require.NoError(t, err)
-		err = r.SaveConnectionRecord(&connection.Record{
+		err = r.SaveDIDExConnectionRecord(&connection.Record{
 			ConnectionID: connID,
 		})
 		require.NoError(t, err)
@@ -642,7 +642,7 @@ func TestHandleDIDEvent(t *testing.T) {
 		// setup connection state
 		r, err := connection.NewRecorder(provider)
 		require.NoError(t, err)
-		err = r.SaveConnectionRecord(&connection.Record{
+		err = r.SaveDIDExConnectionRecord(&connection.Record{
 			ConnectionID:   connID,
 			MyDID:          myDID,
 			TheirDID:       theirDID,
@@ -688,7 +688,7 @@ func TestHandleDIDEvent(t *testing.T) {
 		// setup connection state
 		r, err := connection.NewRecorder(provider)
 		require.NoError(t, err)
-		err = r.SaveConnectionRecord(&connection.Record{
+		err = r.SaveDIDExConnectionRecord(&connection.Record{
 			ConnectionID:   connID,
 			MyDID:          myDID,
 			TheirDID:       theirDID,
@@ -789,7 +789,7 @@ func TestHandleDIDEvent(t *testing.T) {
 		// setup connection state
 		r, err := connection.NewRecorder(provider)
 		require.NoError(t, err)
-		err = r.SaveConnectionRecord(&connection.Record{
+		err = r.SaveDIDExConnectionRecord(&connection.Record{
 			ConnectionID:   connID,
 			MyDID:          myDID,
 			TheirDID:       theirDID,

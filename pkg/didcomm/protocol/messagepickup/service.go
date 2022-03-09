@@ -63,7 +63,7 @@ type provider interface {
 }
 
 type connections interface {
-	GetConnectionRecord(string) (*connection.Record, error)
+	GetConnectionRecord(string) (*service.ConnectionRecord, error)
 }
 
 // Service for the messagepickup protocol.
@@ -587,7 +587,7 @@ func (s *Service) Noop(connectionID string) error {
 	return nil
 }
 
-func (s *Service) getConnection(routerConnID string) (*connection.Record, error) {
+func (s *Service) getConnection(routerConnID string) (*service.ConnectionRecord, error) {
 	conn, err := s.connectionLookup.GetConnectionRecord(routerConnID)
 	if err != nil {
 		if errors.Is(err, storage.ErrDataNotFound) {

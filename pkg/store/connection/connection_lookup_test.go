@@ -17,6 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/aries-framework-go/component/storageutil/mem"
+	didcomm "github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	mockstorage "github.com/hyperledger/aries-framework-go/pkg/mock/storage"
 	"github.com/hyperledger/aries-framework-go/spi/storage"
 )
@@ -91,7 +92,7 @@ func TestConnectionReader_GetAndQueryConnectionRecord(t *testing.T) {
 		require.NotNil(t, lookup)
 
 		for _, connectionID := range connectionIDS {
-			connection, err := lookup.GetConnectionRecord(connectionID)
+			connection, err := lookup.GetDIDExConnectionRecord(connectionID)
 			require.Error(t, err)
 			require.Equal(t, err, storage.ErrDataNotFound)
 			require.Nil(t, connection)
@@ -101,7 +102,7 @@ func TestConnectionReader_GetAndQueryConnectionRecord(t *testing.T) {
 		saveInStore(lookup.store, connectionIDS)
 
 		for _, connectionID := range connectionIDS {
-			connection, err := lookup.GetConnectionRecord(connectionID)
+			connection, err := lookup.GetDIDExConnectionRecord(connectionID)
 			require.NoError(t, err)
 			require.NotNil(t, connection)
 			require.Equal(t, connectionID, connection.ConnectionID)
@@ -120,7 +121,7 @@ func TestConnectionReader_GetAndQueryConnectionRecord(t *testing.T) {
 		require.NotNil(t, lookup)
 
 		for _, connectionID := range connectionIDS {
-			connection, err := lookup.GetConnectionRecord(connectionID)
+			connection, err := lookup.GetDIDExConnectionRecord(connectionID)
 			require.Error(t, err)
 			require.Equal(t, err, storage.ErrDataNotFound)
 			require.Nil(t, connection)
@@ -130,7 +131,7 @@ func TestConnectionReader_GetAndQueryConnectionRecord(t *testing.T) {
 		saveInStore(lookup.protocolStateStore, connectionIDS)
 
 		for _, connectionID := range connectionIDS {
-			connection, err := lookup.GetConnectionRecord(connectionID)
+			connection, err := lookup.GetDIDExConnectionRecord(connectionID)
 			require.NoError(t, err)
 			require.NotNil(t, connection)
 			require.Equal(t, connectionID, connection.ConnectionID)
@@ -389,11 +390,8 @@ func TestGetConnectionIDByDIDs(t *testing.T) {
 		require.NoError(t, err)
 
 		require.NotNil(t, recorder)
-		connRec := &Record{
-			ThreadID:     threadIDValue,
+		connRec := &didcomm.ConnectionRecord{
 			ConnectionID: sampleConnID,
-			State:        StateNameCompleted,
-			Namespace:    MyNSPrefix,
 			MyDID:        myDID,
 			TheirDID:     theirDID,
 		}

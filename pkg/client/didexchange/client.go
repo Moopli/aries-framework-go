@@ -346,6 +346,9 @@ func (c *Client) CreateImplicitInvitationWithDID(inviter, invitee *DIDInfo) (str
 	return c.didexchangeSvc.CreateImplicitInvitation(inviter.Label, inviter.DID, invitee.Label, invitee.DID, nil)
 }
 
+// TODO: add method to query completed connections, instead of relying on didex-style QueryConnections state=completed
+//  so we can decouple from the state parameter only used in didex
+
 // QueryConnections queries connections matching given criteria(parameters).
 func (c *Client) QueryConnections(request *QueryConnectionsParams) ([]*Connection, error) { //nolint: gocyclo
 	// TODO https://github.com/hyperledger/aries-framework-go/issues/655 - query all connections from all criteria and
@@ -386,7 +389,7 @@ func (c *Client) QueryConnections(request *QueryConnectionsParams) ([]*Connectio
 
 // GetConnection fetches single connection record for given id.
 func (c *Client) GetConnection(connectionID string) (*Connection, error) {
-	conn, err := c.connectionStore.GetConnectionRecord(connectionID)
+	conn, err := c.connectionStore.GetDIDExConnectionRecord(connectionID)
 	if err != nil {
 		if errors.Is(err, storage.ErrDataNotFound) {
 			return nil, ErrConnectionNotFound

@@ -72,7 +72,7 @@ func (p *ProposePresentationParams) UnmarshalJSON(b []byte) error {
 
 // FromDIDCommMsgMap implements service.MsgMapDecoder.
 func (p *ProposePresentationParams) FromDIDCommMsgMap(msgMap service.DIDCommMsgMap) error {
-	isV2, _ := service.IsDIDCommV2(&msgMap) // nolint:errcheck
+	isV2 := service.IsDIDCommV2(&msgMap)
 	if isV2 {
 		msgV3 := &ProposePresentationV3{}
 
@@ -204,7 +204,7 @@ func (p *RequestPresentationParams) UnmarshalJSON(b []byte) error {
 
 // FromDIDCommMsgMap implements service.MsgMapDecoder.
 func (p *RequestPresentationParams) FromDIDCommMsgMap(msgMap service.DIDCommMsgMap) error {
-	isV2, _ := service.IsDIDCommV2(&msgMap) // nolint:errcheck
+	isV2 := service.IsDIDCommV2(&msgMap)
 	if isV2 {
 		msgV3 := &RequestPresentationV3{}
 
@@ -336,7 +336,7 @@ func (p *PresentationParams) UnmarshalJSON(b []byte) error {
 
 // FromDIDCommMsgMap implements service.MsgMapDecoder.
 func (p *PresentationParams) FromDIDCommMsgMap(msgMap service.DIDCommMsgMap) error {
-	isV2, _ := service.IsDIDCommV2(&msgMap) // nolint:errcheck
+	isV2 := service.IsDIDCommV2(&msgMap)
 	if isV2 {
 		msgV3 := &PresentationV3{}
 

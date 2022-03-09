@@ -16,7 +16,6 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/protocol/issuecredential"
 	mocks "github.com/hyperledger/aries-framework-go/pkg/internal/gomocks/client/issuecredential"
-	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 )
 
 const (
@@ -66,7 +65,7 @@ func TestClient_SendOffer(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendOffer(&OfferCredential{}, &connection.Record{
+		piid, err := client.SendOffer(&OfferCredential{}, &service.ConnectionRecord{
 			MyDID:    Alice,
 			TheirDID: Bob,
 		})
@@ -89,7 +88,7 @@ func TestClient_SendOffer(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendOffer(&OfferCredential{}, &connection.Record{
+		piid, err := client.SendOffer(&OfferCredential{}, &service.ConnectionRecord{
 			MyDID:          Alice,
 			TheirDID:       Bob,
 			DIDCommVersion: service.V2,
@@ -105,7 +104,7 @@ func TestClient_SendOffer(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendOffer(nil, &connection.Record{
+		piid, err := client.SendOffer(nil, &service.ConnectionRecord{
 			MyDID:    Alice,
 			TheirDID: Bob,
 		})
@@ -133,7 +132,7 @@ func TestClient_SendProposal(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendProposal(&ProposeCredential{}, &connection.Record{
+		piid, err := client.SendProposal(&ProposeCredential{}, &service.ConnectionRecord{
 			MyDID:    Alice,
 			TheirDID: Bob,
 		})
@@ -156,7 +155,7 @@ func TestClient_SendProposal(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendProposal(&ProposeCredential{}, &connection.Record{
+		piid, err := client.SendProposal(&ProposeCredential{}, &service.ConnectionRecord{
 			MyDID:          Alice,
 			TheirDID:       Bob,
 			DIDCommVersion: service.V2,
@@ -172,7 +171,7 @@ func TestClient_SendProposal(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendProposal(nil, &connection.Record{
+		piid, err := client.SendProposal(nil, &service.ConnectionRecord{
 			MyDID:    Alice,
 			TheirDID: Bob,
 		})
@@ -200,7 +199,7 @@ func TestClient_SendRequest(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendRequest(&RequestCredential{}, &connection.Record{
+		piid, err := client.SendRequest(&RequestCredential{}, &service.ConnectionRecord{
 			MyDID:    Alice,
 			TheirDID: Bob,
 		})
@@ -223,7 +222,7 @@ func TestClient_SendRequest(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendRequest(&RequestCredential{}, &connection.Record{
+		piid, err := client.SendRequest(&RequestCredential{}, &service.ConnectionRecord{
 			MyDID:          Alice,
 			TheirDID:       Bob,
 			DIDCommVersion: service.V2,
@@ -239,7 +238,7 @@ func TestClient_SendRequest(t *testing.T) {
 		client, err := New(provider)
 		require.NoError(t, err)
 
-		piid, err := client.SendRequest(nil, &connection.Record{
+		piid, err := client.SendRequest(nil, &service.ConnectionRecord{
 			MyDID:    Alice,
 			TheirDID: Bob,
 		})

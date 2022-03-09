@@ -29,9 +29,10 @@ var logger = log.New("aries-framework/controller/connection")
 const (
 	CommandName = "connection"
 
-	RotateDIDCommandMethod = "RotateDID"
-	CreateV2CommandMethod  = "CreateConnectionV2"
-	SetToV2CommandMethod   = "SetConnectionToDIDCommV2"
+	RotateDIDCommandMethod        = "RotateDID"
+	CreateV2CommandMethod         = "CreateConnectionV2"
+	SetToV2CommandMethod          = "SetConnectionToDIDCommV2"
+	QueryConnectionsCommandMethod = "QueryConnections"
 
 	errEmptyConnID   = "empty connection ID"
 	errEmptyKID      = "empty signing KID"
@@ -56,6 +57,8 @@ const (
 	SetToDIDCommV2ErrorCode
 	// RotateDIDErrorCode is for failures in rotate DID command.
 	RotateDIDErrorCode
+	// QueryConnectionsErrorCode is for failures in query connections command.
+	QueryConnectionsErrorCode
 )
 
 type provider interface {
@@ -92,7 +95,35 @@ func (c *Command) GetHandlers() []command.Handler {
 		cmdutil.NewCommandHandler(CommandName, RotateDIDCommandMethod, c.RotateDID),
 		cmdutil.NewCommandHandler(CommandName, CreateV2CommandMethod, c.CreateConnectionV2),
 		cmdutil.NewCommandHandler(CommandName, SetToV2CommandMethod, c.SetConnectionToDIDCommV2),
+		cmdutil.NewCommandHandler(CommandName, QueryConnectionsCommandMethod, c.QueryConnections),
 	}
+}
+
+// QueryConnections queries agent to agent connections.
+func (c *Command) QueryConnections(rw io.Writer, req io.Reader) command.Error {
+	var request QueryConnectionRequest
+
+	err := json.NewDecoder(req).Decode(&request)
+	if err != nil {
+		logutil.LogInfo(logger, CommandName, QueryConnectionsCommandMethod, err.Error())
+
+		return command.NewValidationError(InvalidRequestErrorCode, err)
+	}
+
+	results, err := c.client.Query(&request)
+	if err != nil {
+		logutil.LogError(logger, CommandName, QueryConnectionsCommandMethod, err.Error())
+
+		return command.NewExecuteError(QueryConnectionsErrorCode, err)
+	}
+
+	command.WriteNillableResponse(rw, &QueryConnectionResponse{
+		Results: results,
+	}, logger)
+
+	logutil.LogDebug(logger, CommandName, QueryConnectionsCommandMethod, successString)
+
+	return nil
 }
 
 // CreateConnectionV2 creates a DIDComm v2 connection.

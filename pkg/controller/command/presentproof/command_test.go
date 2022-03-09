@@ -216,7 +216,7 @@ func TestCommand_SendRequestPresentation(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -249,7 +249,7 @@ func TestCommand_SendRequestPresentation(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -279,7 +279,7 @@ func TestCommand_SendRequestPresentation(t *testing.T) {
 
 		connID := uuid.New().String()
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			ConnectionID: connID,
 			MyDID:        "id",
 			TheirDID:     "id",
@@ -308,7 +308,7 @@ func TestCommand_SendRequestPresentation(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -440,7 +440,7 @@ func TestCommand_SendProposePresentation(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -473,7 +473,7 @@ func TestCommand_SendProposePresentation(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
 			TheirDID: "id",
 		})
@@ -503,7 +503,7 @@ func TestCommand_SendProposePresentation(t *testing.T) {
 
 		connID := uuid.New().String()
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			ConnectionID: connID,
 			MyDID:        "id",
 			TheirDID:     "id",
@@ -532,7 +532,7 @@ func TestCommand_SendProposePresentation(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
 
-		mockConnRec := mockConnectionRecorder(t, connection.Record{
+		mockConnRec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
 			TheirDID:       "id",
 			DIDCommVersion: didcomm.V2,
@@ -1435,7 +1435,7 @@ func createProvider(ctrl *gomock.Controller) *mocks.MockProvider {
 	return provider
 }
 
-func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connection.Recorder {
+func mockConnectionRecorder(t *testing.T, records ...didcomm.ConnectionRecord) *connection.Recorder {
 	t.Helper()
 
 	storeProv := mockstore.NewMockStoreProvider()
@@ -1453,10 +1453,6 @@ func mockConnectionRecorder(t *testing.T, records ...connection.Record) *connect
 
 		if rec.ConnectionID == "" {
 			rec.ConnectionID = uuid.New().String()
-		}
-
-		if rec.State == "" {
-			rec.State = connection.StateNameCompleted
 		}
 
 		err = recorder.SaveConnectionRecord(&rec)

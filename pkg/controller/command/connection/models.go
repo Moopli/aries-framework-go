@@ -6,6 +6,19 @@ SPDX-License-Identifier: Apache-2.0
 
 package connection
 
+import (
+	client "github.com/hyperledger/aries-framework-go/pkg/client/connection"
+	didcomm "github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
+)
+
+// QueryConnectionRequest is used for querying connections.
+type QueryConnectionRequest = client.QueryParams
+
+// QueryConnectionResponse is used for returning query connection results.
+type QueryConnectionResponse struct {
+	Results []*didcomm.ConnectionRecord `json:"results,omitempty"`
+}
+
 // RotateDIDRequest request to rotate MyDID in the connection with the given ID.
 type RotateDIDRequest struct {
 	ID            string `json:"id"`

@@ -32,7 +32,6 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/framework/aries"
 	"github.com/hyperledger/aries-framework-go/pkg/framework/aries/defaults"
 	"github.com/hyperledger/aries-framework-go/pkg/framework/context"
-	"github.com/hyperledger/aries-framework-go/pkg/store/connection"
 	bddcontext "github.com/hyperledger/aries-framework-go/test/bdd/pkg/context"
 )
 
@@ -219,7 +218,7 @@ func (s *GoSDKSteps) sendProposal(holder, issuer string) error {
 				},
 			}},
 		},
-		&connection.Record{
+		&service.ConnectionRecord{
 			MyDID:    s.dids[holder],
 			TheirDID: s.dids[issuer],
 		},
@@ -257,7 +256,7 @@ func (s *GoSDKSteps) sendOffer(issuer, holder string) error {
 				},
 			}},
 		},
-		&connection.Record{
+		&service.ConnectionRecord{
 			MyDID:    s.dids[issuer],
 			TheirDID: s.dids[holder],
 		},
@@ -295,7 +294,7 @@ func (s *GoSDKSteps) sendRequest(holder, issuer string) error {
 				},
 			}},
 		},
-		&connection.Record{
+		&service.ConnectionRecord{
 			MyDID:    s.dids[holder],
 			TheirDID: s.dids[issuer],
 		},
@@ -410,7 +409,7 @@ func (s *GoSDKSteps) checkConnection(agentA, agentB string, client *didexchange.
 		return fmt.Errorf("'%s' does not have any connection with '%s'", agentA, agentB)
 	}
 
-	if conn.State != "completed" {
+	if conn.State != "completed" && conn.State != "" {
 		return fmt.Errorf(
 			"'%s' has connection record in state '%s' but expected 'completed'",
 			agentA, conn.State,

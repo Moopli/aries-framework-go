@@ -437,11 +437,7 @@ func (s *Service) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string)
 func (s *Service) getCurrentInternalDataAndPIID(msg service.DIDCommMsgMap) (string, *internalData, error) {
 	var protocolVersion version
 
-	isV2, err := service.IsDIDCommV2(&msg)
-	if err != nil {
-		return "", nil, fmt.Errorf("checking message version: %w", err)
-	}
-
+	isV2 := service.IsDIDCommV2(&msg)
 	if isV2 {
 		protocolVersion = version3
 	} else {

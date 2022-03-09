@@ -17,7 +17,7 @@ import (
 	"github.com/cucumber/godog"
 	"github.com/google/uuid"
 
-	"github.com/hyperledger/aries-framework-go/pkg/client/didexchange"
+	"github.com/hyperledger/aries-framework-go/pkg/client/connection"
 	"github.com/hyperledger/aries-framework-go/pkg/client/introduce"
 	"github.com/hyperledger/aries-framework-go/pkg/client/mediator"
 	"github.com/hyperledger/aries-framework-go/pkg/client/outofband"
@@ -106,14 +106,14 @@ func (a *SDKSteps) connectionEstablished(agent1, agent2 string) error {
 		return err
 	}
 
-	agent1connections, err := a.bddContext.DIDExchangeClients[agent1].QueryConnections(&didexchange.QueryConnectionsParams{
+	agent1connections, err := a.bddContext.ConnectionClients[agent1].Query(&connection.QueryParams{
 		ParentThreadID: a.invitationID,
 	})
 	if err != nil {
 		return fmt.Errorf("%s connections: %w", agent1, err)
 	}
 
-	agent2connections, err := a.bddContext.DIDExchangeClients[agent2].QueryConnections(&didexchange.QueryConnectionsParams{
+	agent2connections, err := a.bddContext.ConnectionClients[agent2].Query(&connection.QueryParams{
 		InvitationID: a.invitationID,
 	})
 	if err != nil {
@@ -471,8 +471,8 @@ func (a *SDKSteps) stopProtocol(agentID string) error {
 	return nil
 }
 
-func (a *SDKSteps) getConnection(agent1, agent2 string) (*didexchange.Connection, error) {
-	connections, err := a.bddContext.DIDExchangeClients[agent1].QueryConnections(&didexchange.QueryConnectionsParams{})
+func (a *SDKSteps) getConnection(agent1, agent2 string) (*service.ConnectionRecord, error) {
+	connections, err := a.bddContext.ConnectionClients[agent1].Query(&connection.QueryParams{})
 	if err != nil {
 		return nil, err
 	}

@@ -492,6 +492,7 @@ func getHandlerWithError(t *testing.T, lookup string, f *fails) rest.Handler {
 	connBytes, err := json.Marshal(connRec)
 	require.NoError(t, err)
 	require.NoError(t, store.Put("conn_1234", connBytes, spi.Tag{Name: "conn_"}))
+	require.NoError(t, protocolStateStore.Put("conn_1234", connBytes, spi.Tag{Name: "conn_"}))
 
 	h := crypto.SHA256.New()
 	hash := h.Sum([]byte(connRec.ConnectionID))

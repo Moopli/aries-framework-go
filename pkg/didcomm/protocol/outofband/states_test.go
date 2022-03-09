@@ -272,7 +272,7 @@ func (m *mockConnRecorder) SaveInvitation(string, interface{}) error {
 	return m.saveInvErr
 }
 
-func (m *mockConnRecorder) GetConnectionRecord(string) (*connection.Record, error) {
+func (m *mockConnRecorder) GetDIDExConnectionRecord(string) (*connection.Record, error) {
 	return m.getConnRecordVal, m.getConnRecordErr
 }
 

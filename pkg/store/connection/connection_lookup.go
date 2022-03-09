@@ -45,13 +45,6 @@ type provider interface {
 	StorageProvider() storage.Provider
 }
 
-// DIDRotationRecord holds information about a DID Rotation.
-type DIDRotationRecord struct {
-	OldDID    string `json:"oldDID,omitempty"`
-	NewDID    string `json:"newDID,omitempty"`
-	FromPrior string `json:"fromPrior,omitempty"`
-}
-
 // Record contain info about did exchange connection.
 type Record struct {
 	ConnectionID        string
@@ -71,7 +64,6 @@ type Record struct {
 	MediaTypeProfiles   []string
 	DIDCommVersion      didcomm.Version
 	PeerDIDInitialState string
-	MyDIDRotation       *DIDRotationRecord `json:"myDIDRotation,omitempty"`
 }
 
 // NewLookup returns new connection lookup instance.
@@ -107,18 +99,30 @@ func NewLookup(p provider) (*Lookup, error) {
 
 // Lookup takes care of connection related persistence features.
 type Lookup struct {
-	protocolStateStore storage.Store
+	protocolStateStore storage.Store // only used for didexchange / OOB v1
 	store              storage.Store
 }
 
 // GetConnectionRecord return connection record based on the connection ID.
-func (c *Lookup) GetConnectionRecord(connectionID string) (*Record, error) {
-	var rec Record
+func (c *Lookup) GetConnectionRecord(connectionID string) (*didcomm.ConnectionRecord, error) {
+	var rec didcomm.ConnectionRecord
 
 	err := getAndUnmarshal(getConnectionKeyPrefix()(connectionID), &rec, c.store)
 	if err != nil {
+		return nil, err
+	}
+
+	return &rec, nil
+}
+
+// GetDIDExConnectionRecord return connection record based on the connection ID.
+func (c *Lookup) GetDIDExConnectionRecord(connectionID string) (*Record, error) {
+	var rec Record
+
+	err := getAndUnmarshal(getConnectionKeyPrefix()(connectionID), &rec, c.protocolStateStore)
+	if err != nil {
 		if errors.Is(err, storage.ErrDataNotFound) {
-			err = getAndUnmarshal(getConnectionKeyPrefix()(connectionID), &rec, c.protocolStateStore)
+			err = getAndUnmarshal(getConnectionKeyPrefix()(connectionID), &rec, c.store)
 			if err != nil {
 				return nil, err
 			}
@@ -131,28 +135,65 @@ func (c *Lookup) GetConnectionRecord(connectionID string) (*Record, error) {
 }
 
 // GetConnectionRecordByDIDs return connection record for completed connection based on the DIDs of the participants.
-func (c *Lookup) GetConnectionRecordByDIDs(myDID, theirDID string) (*Record, error) {
+func (c *Lookup) GetConnectionRecordByDIDs(myDID, theirDID string) (*didcomm.ConnectionRecord, error) {
 	return c.queryExpectingOne(bothDIDsTagName+":"+tagValueFromDIDs(myDID, theirDID), c.store)
 }
 
 // GetConnectionRecordByTheirDID return connection record for completed connection based on the DID of the other party.
-func (c *Lookup) GetConnectionRecordByTheirDID(theirDID string) (*Record, error) {
+func (c *Lookup) GetConnectionRecordByTheirDID(theirDID string) (*didcomm.ConnectionRecord, error) {
 	return c.queryExpectingOne(theirDIDTagName+":"+tagValueFromDIDs(theirDID), c.store)
 }
 
-func (c *Lookup) queryExpectingOne(query string, store storage.Store) (*Record, error) {
-	records, err := queryRecordsFromStore(query, store, nil, nil)
+func (c *Lookup) queryExpectingOne(query string, store storage.Store) (*didcomm.ConnectionRecord, error) {
+	records, err := queryCompleteConnections(query, store)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get data from persistent store: %w", err)
+		return nil, fmt.Errorf("failed to query persistent store: %w", err)
 	}
 
 	if len(records) == 0 {
 		return nil, storage.ErrDataNotFound
+	} else if len(records) != 1 {
+		logger.Debugf("query '%s' expected 1 result, got %d", query, len(records))
 	}
 
-	logger.Debugf("query '%s' expected 1 result, got %d", query, len(records))
-
 	return records[0], nil
+}
+
+// QueryCompleteConnections returns records for completed connections, found in underlying store
+// for given query criteria.
+func (c *Lookup) QueryCompleteConnections() ([]*didcomm.ConnectionRecord, error) {
+	// TODO https://github.com/hyperledger/aries-framework-go/issues/655 query criteria to be added as part of issue
+	searchKey := getConnectionKeyPrefix()("")
+
+	return queryCompleteConnections(searchKey, c.store)
+}
+
+func queryCompleteConnections(searchKey string, store storage.Store) ([]*didcomm.ConnectionRecord, error) {
+	// TODO https://github.com/hyperledger/aries-framework-go/issues/655 query criteria to be added as part of issue
+	var (
+		records []*didcomm.ConnectionRecord
+		keys    = make(map[string]struct{})
+	)
+
+	appender := func(value []byte) error {
+		var record didcomm.ConnectionRecord
+
+		err := json.Unmarshal(value, &record)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal connection record: %w", err)
+		}
+
+		records = append(records, &record)
+
+		return nil
+	}
+
+	err := queryRecordsFromStore(searchKey, store, keys, appender)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get data from persistent store: %w", err)
+	}
+
+	return records, nil
 }
 
 // QueryConnectionRecords returns connection records found in underlying store
@@ -164,15 +205,27 @@ func (c *Lookup) QueryConnectionRecords() ([]*Record, error) {
 	var (
 		records []*Record
 		keys    = make(map[string]struct{})
-		err     error
 	)
 
-	records, err = queryRecordsFromStore(searchKey, c.store, keys, records)
+	appender := func(value []byte) error {
+		var record Record
+
+		err := json.Unmarshal(value, &record)
+		if err != nil {
+			return fmt.Errorf("failed to unmarshal connection record: %w", err)
+		}
+
+		records = append(records, &record)
+
+		return nil
+	}
+
+	err := queryRecordsFromStore(searchKey, c.store, keys, appender)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get data from persistent store: %w", err)
 	}
 
-	records, err = queryRecordsFromStore(searchKey, c.protocolStateStore, keys, records)
+	err = queryRecordsFromStore(searchKey, c.protocolStateStore, keys, appender)
 	if err != nil {
 		return nil, fmt.Errorf("failed to augment records from persistent store with records "+
 			"from the protocol state store: %w", err)
@@ -181,15 +234,15 @@ func (c *Lookup) QueryConnectionRecords() ([]*Record, error) {
 	return records, nil
 }
 
-func queryRecordsFromStore(searchKey string, store storage.Store, usedKeys map[string]struct{}, appendTo []*Record) (
-	[]*Record, error) {
+func queryRecordsFromStore(searchKey string, store storage.Store,
+	usedKeys map[string]struct{}, appender func([]byte) error) error {
 	if usedKeys == nil {
 		usedKeys = make(map[string]struct{})
 	}
 
 	itr, err := store.Query(searchKey)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query store: %w", err)
+		return fmt.Errorf("failed to query store: %w", err)
 	}
 
 	defer func() {
@@ -199,12 +252,12 @@ func queryRecordsFromStore(searchKey string, store storage.Store, usedKeys map[s
 		}
 	}()
 
-	appendTo, err = readRecordIterator(itr, usedKeys, appendTo)
+	err = readRecordIterator(itr, usedKeys, appender)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read records: %w", err)
+		return fmt.Errorf("failed to read records: %w", err)
 	}
 
-	return appendTo, nil
+	return nil
 }
 
 // GetConnectionRecordAtState return connection record based on the connection ID and state.
@@ -280,7 +333,7 @@ func (c *Recorder) GetEvent(connectionID string) ([]byte, error) {
 	return c.protocolStateStore.Get(getEventDataKeyPrefix()(connectionID))
 }
 
-func readRecordIterator(itr storage.Iterator, usedKeys map[string]struct{}, appendTo []*Record) ([]*Record, error) {
+func readRecordIterator(itr storage.Iterator, usedKeys map[string]struct{}, appender func([]byte) error) error {
 	var (
 		more    bool
 		errNext error
@@ -289,7 +342,7 @@ func readRecordIterator(itr storage.Iterator, usedKeys map[string]struct{}, appe
 	for more, errNext = itr.Next(); more && errNext == nil; more, errNext = itr.Next() {
 		key, err := itr.Key()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get key from iterator: %w", err)
+			return fmt.Errorf("failed to get key from iterator: %w", err)
 		}
 
 		// skip elements that were already found in a previous store
@@ -299,25 +352,22 @@ func readRecordIterator(itr storage.Iterator, usedKeys map[string]struct{}, appe
 
 		value, err := itr.Value()
 		if err != nil {
-			return nil, fmt.Errorf("failed to get value from iterator: %w", err)
+			return fmt.Errorf("failed to get value from iterator: %w", err)
 		}
 
-		var record Record
-
-		err = json.Unmarshal(value, &record)
+		err = appender(value)
 		if err != nil {
-			return nil, fmt.Errorf("failed to unmarshal connection record: %w", err)
+			return fmt.Errorf("appending record: %w", err)
 		}
 
-		appendTo = append(appendTo, &record)
 		usedKeys[key] = struct{}{}
 	}
 
 	if errNext != nil {
-		return nil, fmt.Errorf("failed to get next set of data from iterator: %w", errNext)
+		return fmt.Errorf("failed to get next set of data from iterator: %w", errNext)
 	}
 
-	return appendTo, nil
+	return nil
 }
 
 func getAndUnmarshal(key string, target interface{}, store storage.Store) error {

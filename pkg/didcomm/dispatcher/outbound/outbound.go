@@ -43,13 +43,13 @@ type provider interface {
 
 type connectionLookup interface {
 	GetConnectionIDByDIDs(myDID, theirDID string) (string, error)
-	GetConnectionRecord(string) (*connection.Record, error)
-	GetConnectionRecordByDIDs(myDID, theirDID string) (*connection.Record, error)
+	GetConnectionRecord(string) (*service.ConnectionRecord, error)
+	GetConnectionRecordByDIDs(myDID, theirDID string) (*service.ConnectionRecord, error)
 }
 
 type connectionRecorder interface {
 	connectionLookup
-	SaveConnectionRecord(record *connection.Record) error
+	SaveConnectionRecord(record *service.ConnectionRecord) error
 }
 
 // Dispatcher dispatch msgs to destination.
@@ -91,7 +91,7 @@ func NewOutbound(prov provider) (*Dispatcher, error) {
 }
 
 // SendToDID sends a message from myDID to the agent who owns theirDID.
-func (o *Dispatcher) SendToDID(msg interface{}, myDID, theirDID string) error { // nolint:funlen,gocyclo,gocognit
+func (o *Dispatcher) SendToDID(msg interface{}, myDID, theirDID string) error { // nolint:funlen,gocyclo
 	myDocResolution, err := o.vdRegistry.Resolve(myDID)
 	if err != nil {
 		return fmt.Errorf("failed to resolve my DID: %w", err)
@@ -107,8 +107,8 @@ func (o *Dispatcher) SendToDID(msg interface{}, myDID, theirDID string) error { 
 	didcommMsg, isMsgMap := msg.(service.DIDCommMsgMap)
 
 	if isMsgMap {
-		isV2, e := service.IsDIDCommV2(&didcommMsg)
-		if e == nil && isV2 {
+		isV2 := service.IsDIDCommV2(&didcommMsg)
+		if isV2 {
 			connectionVersion = service.V2
 		} else {
 			connectionVersion = service.V1
@@ -122,22 +122,12 @@ func (o *Dispatcher) SendToDID(msg interface{}, myDID, theirDID string) error { 
 
 	var sendWithAnoncrypt bool
 
-	if isMsgMap { // nolint:nestif
+	if isMsgMap {
 		didcommMsg = o.didcommV2Handler.HandleOutboundMessage(didcommMsg, connRec)
 
 		if connRec.PeerDIDInitialState != "" {
 			// we need to use anoncrypt if myDID is a peer DID being shared with the recipient through this message.
 			sendWithAnoncrypt = true
-		}
-
-		// the first message sent using didcomm v2 should contain the invitation ID as pthid
-		if connRec.DIDCommVersion == service.V2 && connRec.ParentThreadID != "" && connectionVersion == service.V2 {
-			pthid, hasPthid := didcommMsg["pthid"].(string)
-
-			thid, e := didcommMsg.ThreadID()
-			if e == nil && didcommMsg.ID() == thid && (!hasPthid || pthid == "") {
-				didcommMsg["pthid"] = connRec.ParentThreadID
-			}
 		}
 
 		msg = &didcommMsg
@@ -194,7 +184,7 @@ func (o *Dispatcher) defaultMediaTypeProfiles() []string {
 
 // getOrCreateConnection returns true iff it created a new connection rather than fetching one.
 func (o *Dispatcher) getOrCreateConnection(myDID, theirDID string, connectionVersion service.Version,
-) (*connection.Record, error) {
+) (*service.ConnectionRecord, error) {
 	record, err := o.connections.GetConnectionRecordByDIDs(myDID, theirDID)
 	if err == nil {
 		return record, nil
@@ -205,12 +195,10 @@ func (o *Dispatcher) getOrCreateConnection(myDID, theirDID string, connectionVer
 	// myDID and theirDID never had a connection, create a default connection for OOBless communication.
 	logger.Debugf("no connection record found for myDID=%s theirDID=%s, will create", myDID, theirDID)
 
-	newRecord := connection.Record{
+	newRecord := service.ConnectionRecord{
 		ConnectionID:      uuid.New().String(),
 		MyDID:             myDID,
 		TheirDID:          theirDID,
-		State:             connection.StateNameCompleted,
-		Namespace:         connection.MyNSPrefix,
 		MediaTypeProfiles: o.defaultMediaTypeProfiles(),
 		DIDCommVersion:    connectionVersion,
 	}

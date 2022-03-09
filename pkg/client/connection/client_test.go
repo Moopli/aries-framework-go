@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/middleware"
+	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/did"
 	vdrapi "github.com/hyperledger/aries-framework-go/pkg/framework/aries/api/vdr"
 	mockcrypto "github.com/hyperledger/aries-framework-go/pkg/mock/crypto"
@@ -117,7 +118,7 @@ func TestClient_CreateConnectionV2(t *testing.T) {
 		require.NotEqual(t, "", connID)
 	})
 
-	t.Run("fail to resolve their did", func(t *testing.T) {
+	t.Run("fail to resolve their did when saving to did store", func(t *testing.T) {
 		prov := mockProvider(t)
 
 		prov.VDRegistryValue = &mockvdr.MockVDRegistry{
@@ -134,23 +135,6 @@ func TestClient_CreateConnectionV2(t *testing.T) {
 				}
 			},
 		}
-
-		c, err := New(prov)
-		require.NoError(t, err)
-
-		connID, err := c.CreateConnectionV2(myDID, theirDID)
-		require.Error(t, err)
-		require.ErrorIs(t, err, expectErr)
-		require.Contains(t, err.Error(), "resolving their DID")
-		require.Equal(t, "", connID)
-	})
-
-	t.Run("fail to save their did to did store", func(t *testing.T) {
-		prov := mockProvider(t)
-
-		prov.StorageProviderValue = mockstore.NewCustomMockStoreProvider(&mockstore.MockStore{
-			ErrPut: expectErr,
-		})
 
 		didStore, err := didstore.NewConnectionStore(prov)
 		require.NoError(t, err)
@@ -200,46 +184,10 @@ func TestClient_CreateConnectionV2(t *testing.T) {
 		require.Equal(t, "", connID)
 	})
 
-	t.Run("fail to resolve my did when saving to did store", func(t *testing.T) {
-		prov := mockProvider(t)
-
-		prov.VDRegistryValue = &mockvdr.MockVDRegistry{
-			ResolveFunc: func(didID string, _ ...vdrapi.DIDMethodOption) (*did.DocResolution, error) {
-				switch didID {
-				default:
-					fallthrough
-				case myDID:
-					return &did.DocResolution{
-						DIDDocument: mockdiddoc.GetMockDIDDocWithKeyAgreements(t),
-					}, nil
-				case theirDID:
-					return &did.DocResolution{
-						DIDDocument: &did.Doc{
-							ID: theirDID,
-						},
-					}, nil
-				}
-			},
-		}
-
-		didStore, err := didstore.NewConnectionStore(prov)
-		require.NoError(t, err)
-
-		prov.DIDConnectionStoreValue = didStore
-
-		c, err := New(prov)
-		require.NoError(t, err)
-
-		connID, err := c.CreateConnectionV2(myDID, theirDID)
-		require.Error(t, err)
-		require.Contains(t, err.Error(), "failed to create destination")
-		require.Equal(t, "", connID)
-	})
-
 	t.Run("fail to save to connection store", func(t *testing.T) {
 		prov := mockProvider(t)
 
-		prov.ProtocolStateStorageProviderValue = mockstore.NewCustomMockStoreProvider(&mockstore.MockStore{
+		prov.StorageProviderValue = mockstore.NewCustomMockStoreProvider(&mockstore.MockStore{
 			ErrPut: expectErr,
 		})
 
@@ -262,9 +210,8 @@ func TestClient_SetConnectionToDIDCommV2(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connectionID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		c, err := New(prov)
@@ -295,9 +242,8 @@ func TestClient_SetConnectionToDIDCommV2(t *testing.T) {
 		connStore, err := connection.NewRecorder(prov)
 		require.NoError(t, err)
 
-		require.NoError(t, connStore.SaveConnectionRecord(&connection.Record{
+		require.NoError(t, connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: connectionID,
-			State:        connection.StateNameCompleted,
 		}))
 
 		expectErr := fmt.Errorf("expected error")

@@ -31,20 +31,20 @@ import (
 
 func TestNewInboundMessageHandler(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		_ = NewInboundMessageHandler(emptyProvider())
+		_ = NewInboundMessageHandler(emptyProvider(t))
 	})
 }
 
 func TestMessageHandler_HandlerFunc(t *testing.T) {
-	handler := NewInboundMessageHandler(emptyProvider())
+	handler := NewInboundMessageHandler(emptyProvider(t))
 
 	handleFunc := handler.HandlerFunc()
 
 	err := handleFunc(&transport.Envelope{
-		Message: []byte(`{
+		Message: []byte(fmt.Sprintf(`{
 	"@id":"12345",
-	"@type":"message-type"
-}`),
+	"@type":"%s"
+}`, didexchange.RequestMsgType)),
 	})
 	require.NoError(t, err)
 }
@@ -96,14 +96,6 @@ func TestMessageHandler_HandleInboundEnvelope(t *testing.T) {
 			testName:  "fail: parsing message",
 			message:   `{`,
 			expectErr: "invalid payload data format",
-		},
-		{
-			testName: "fail: can't determine if didcomm v1 or v2",
-			message: `{
-	"body":{},
-	"~thread":"12345"
-}`,
-			expectErr: "not a valid didcomm v1 or v2 message",
 		},
 		{
 			testName:   "fail: getDIDs error",
@@ -227,11 +219,10 @@ func TestMessageHandler_HandleInboundEnvelope(t *testing.T) {
 	myDID := "did:test:my-did"
 	theirDID := "did:test:their-did"
 
-	err = connectionRecorder.SaveConnectionRecord(&connection.Record{
+	err = connectionRecorder.SaveConnectionRecord(&service.ConnectionRecord{
 		ConnectionID:  "12345",
 		MyDID:         myDID,
 		TheirDID:      theirDID,
-		State:         connection.StateNameCompleted,
 		MyDIDRotation: nil,
 	})
 	require.NoError(t, err)
@@ -296,7 +287,7 @@ func TestMessageHandler_HandleInboundEnvelope(t *testing.T) {
 }
 
 func TestMessageHandler_Initialize(t *testing.T) {
-	p := emptyProvider()
+	p := emptyProvider(t)
 
 	// second Initialize is no-op
 	h := &MessageHandler{}
@@ -310,7 +301,7 @@ func TestMessageHandler_Initialize(t *testing.T) {
 
 func TestMessageHandler_getDIDs(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 
 		h := NewInboundMessageHandler(p)
 
@@ -325,7 +316,7 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 
 	t.Run("success: dids from key refs", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 
 		h := NewInboundMessageHandler(p)
 
@@ -340,7 +331,7 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 
 	t.Run("success: their DID from message", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 
 		h := NewInboundMessageHandler(p)
 
@@ -357,7 +348,7 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 
 	t.Run("fail: bad did key", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 
 		h := NewInboundMessageHandler(p)
 
@@ -377,7 +368,7 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 
 	t.Run("fail: can't get my did", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 		p.DIDConnectionStoreValue = &mockDIDStore{
 			results: map[string]mockDIDResult{
 				base58.Encode([]byte("my_key")):    {did: "bbb", err: fmt.Errorf("mock did store error")},
@@ -398,7 +389,7 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 
 	t.Run("fail: can't get their did", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 		p.DIDConnectionStoreValue = &mockDIDStore{
 			results: map[string]mockDIDResult{
 				base58.Encode([]byte("my_key")):    {did: "aaa", err: nil},
@@ -419,7 +410,7 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 
 	t.Run("not found", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 		p.DIDConnectionStoreValue = &mockDIDStore{
 			getDIDErr: didstore.ErrNotFound,
 		}
@@ -438,7 +429,7 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 
 	t.Run("success: theirDID needs retry", func(t *testing.T) {
-		p := emptyProvider()
+		p := emptyProvider(t)
 		p.DIDConnectionStoreValue = &mockDIDStore{
 			results: map[string]mockDIDResult{
 				base58.Encode([]byte("my_key")):    {did: "aaa"},
@@ -464,8 +455,10 @@ func TestMessageHandler_getDIDs(t *testing.T) {
 	})
 }
 
-func emptyProvider() *mockprovider.Provider {
-	return &mockprovider.Provider{
+func emptyProvider(t *testing.T) *mockprovider.Provider {
+	t.Helper()
+
+	prov := &mockprovider.Provider{
 		DIDConnectionStoreValue:     &mockDIDStore{},
 		MessageServiceProviderValue: &msghandler.MockMsgSvcProvider{},
 		InboundMessengerValue:       &mocks.MockMessengerHandler{},
@@ -477,7 +470,16 @@ func emptyProvider() *mockprovider.Provider {
 				return "", nil
 			},
 		},
+		StorageProviderValue:              mockstore.NewMockStoreProvider(),
+		ProtocolStateStorageProviderValue: mockstore.NewMockStoreProvider(),
 	}
+
+	m, err := middleware.New(prov)
+	require.NoError(t, err)
+
+	prov.DIDRotatorValue = *m
+
+	return prov
 }
 
 type mockDIDResult struct {

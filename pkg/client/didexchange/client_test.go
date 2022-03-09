@@ -537,7 +537,7 @@ func TestClient_QueryConnectionByID(t *testing.T) {
 		connRec := &connection.Record{ConnectionID: connID, ThreadID: threadID, State: "complete"}
 
 		require.NoError(t, err)
-		require.NoError(t, c.connectionStore.SaveConnectionRecord(connRec))
+		require.NoError(t, c.connectionStore.SaveDIDExConnectionRecord(connRec))
 		result, err := c.GetConnection(connID)
 		require.NoError(t, err)
 		require.Equal(t, "complete", result.State)
@@ -574,7 +574,7 @@ func TestClient_QueryConnectionByID(t *testing.T) {
 		connRec := &connection.Record{ConnectionID: connID, ThreadID: threadID, State: "complete"}
 
 		require.NoError(t, err)
-		require.NoError(t, c.connectionStore.SaveConnectionRecord(connRec))
+		require.NoError(t, c.connectionStore.SaveDIDExConnectionRecord(connRec))
 		_, err = c.GetConnection(connID)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), errMsg)
@@ -689,7 +689,7 @@ func TestClient_CreateConnection(t *testing.T) {
 					CreateConnRecordFunc: func(r *connection.Record, td *did.Doc) error {
 						recorder, err := connection.NewRecorder(storageProvider)
 						require.NoError(t, err)
-						err = recorder.SaveConnectionRecord(r)
+						err = recorder.SaveDIDExConnectionRecord(r)
 						require.NoError(t, err)
 
 						return nil
@@ -760,7 +760,7 @@ func TestClient_CreateConnection(t *testing.T) {
 					CreateConnRecordFunc: func(r *connection.Record, td *did.Doc) error {
 						recorder, err := connection.NewRecorder(storageProvider)
 						require.NoError(t, err)
-						err = recorder.SaveConnectionRecord(r)
+						err = recorder.SaveDIDExConnectionRecord(r)
 						require.NoError(t, err)
 
 						return nil
@@ -808,7 +808,7 @@ func TestClient_RemoveConnection(t *testing.T) {
 		connRec := &connection.Record{ConnectionID: connID, ThreadID: threadID, State: "complete"}
 
 		require.NoError(t, err)
-		require.NoError(t, c.connectionStore.SaveConnectionRecord(connRec))
+		require.NoError(t, c.connectionStore.SaveDIDExConnectionRecord(connRec))
 
 		_, err = c.GetConnection(connID)
 		require.NoError(t, err)

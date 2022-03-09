@@ -835,6 +835,16 @@ const Aries = function (opts) {
 
             SetConnectionToDIDCommV2: async function (req) {
                 return invoke(aw, pending, this.pkgname, "SetConnectionToDIDCommV2", req, "timeout while setting connection to didcomm v2")
+            },
+
+            /**
+             * Retrieves connections based on search params.
+             *
+             * @param req - json document
+             * @returns {Promise<Object>}
+             */
+            queryConnections: async function (req) {
+                return invoke(aw, pending, this.pkgname, "QueryConnections", req, "timeout while querying connections")
             }
         },
 

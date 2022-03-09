@@ -535,6 +535,10 @@ func (a *ControllerSteps) verifyConnectionList(agentID, queryState, verifyID str
 	// call controller
 	var response didexcmd.QueryConnectionsResponse
 
+	if queryState == "completed" {
+		queryState = ""
+	}
+
 	err := util.SendHTTP(http.MethodGet, destination+connOperationID+"?state="+queryState, nil, &response)
 	if err != nil {
 		logger.Errorf("Failed to perform receive invitation, cause : %s", err)

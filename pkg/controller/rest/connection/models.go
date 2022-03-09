@@ -6,6 +6,36 @@ SPDX-License-Identifier: Apache-2.0
 
 package connection
 
+import (
+	client "github.com/hyperledger/aries-framework-go/pkg/client/connection"
+	"github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
+)
+
+// queryConnections model
+//
+// This is used for querying connections
+//
+// swagger:parameters queryConnections
+type queryConnections struct { // nolint: unused,deadcode
+	// Params for querying connections
+	//
+	// in: path
+	// required: true
+	client.QueryParams
+}
+
+// queryConnectionResponse model
+//
+// This is used for returning query connections results
+//
+// swagger:response queryConnectionResponse
+type queryConnectionResponse struct { // nolint: unused,deadcode
+	// in: body
+	Body struct {
+		Results []*service.ConnectionRecord `json:"results,omitempty"`
+	}
+}
+
 // rotateDIDRequest model
 //
 // This is used for connection did rotation request
