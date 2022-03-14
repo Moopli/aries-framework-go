@@ -24,6 +24,7 @@ type DIDCommMsg interface {
 type DIDCommContext interface {
 	MyDID() string
 	TheirDID() string
+	Connection() *ConnectionRecord
 	EventProperties
 }
 
@@ -32,6 +33,20 @@ func NewDIDCommContext(myDID, theirDID string, props map[string]interface{}) DID
 	return &context{
 		myDID:    myDID,
 		theirDID: theirDID,
+		conn: &ConnectionRecord{
+			MyDID:    myDID,
+			TheirDID: theirDID,
+		},
+		props: props,
+	}
+}
+
+// ConnectionDIDCommContext returns a new DIDCommContext with the given connection and properties.
+func ConnectionDIDCommContext(conn *ConnectionRecord, props map[string]interface{}) DIDCommContext {
+	return &context{
+		myDID:    conn.MyDID,
+		theirDID: conn.TheirDID,
+		conn:     conn,
 		props:    props,
 	}
 }
@@ -44,6 +59,7 @@ func EmptyDIDCommContext() DIDCommContext {
 type context struct {
 	myDID    string
 	theirDID string
+	conn     *ConnectionRecord
 	props    map[string]interface{}
 }
 
@@ -53,6 +69,10 @@ func (c *context) MyDID() string {
 
 func (c *context) TheirDID() string {
 	return c.theirDID
+}
+
+func (c *context) Connection() *ConnectionRecord {
+	return c.conn
 }
 
 func (c *context) All() map[string]interface{} {

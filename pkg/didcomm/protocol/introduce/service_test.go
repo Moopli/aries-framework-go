@@ -290,7 +290,7 @@ func TestService_SkipProposal(t *testing.T) {
 		Type: outofband.InvitationMsgType,
 	})
 
-	_, err := alice.HandleOutbound(proposal, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 }
 
@@ -349,10 +349,10 @@ func TestService_Proposal(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -418,10 +418,10 @@ func TestService_ProposalActionContinue(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -480,10 +480,10 @@ func TestService_ProposalSecond(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -549,10 +549,10 @@ func TestService_ProposalSecondActionContinue(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -608,10 +608,10 @@ func TestService_ProposalNoInvitation(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -658,7 +658,7 @@ func TestService_SkipProposalStopIntroducee(t *testing.T) {
 		Type: outofband.InvitationMsgType,
 	})
 
-	_, err := alice.HandleOutbound(proposal, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 }
 
@@ -707,7 +707,7 @@ func TestService_SkipProposalActionStopIntroducee(t *testing.T) {
 		Type: outofband.InvitationMsgType,
 	})
 
-	_, err := alice.HandleOutbound(proposal, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 }
 
@@ -768,10 +768,10 @@ func TestService_ProposalStopIntroduceeFirst(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -832,10 +832,10 @@ func TestService_ProposalStopIntroduceeSecond(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -899,10 +899,10 @@ func TestService_ProposalActionStopIntroduceeSecond(t *testing.T) {
 
 	introduce.WrapWithMetadataPIID(proposal1, proposal2)
 
-	_, err := alice.HandleOutbound(proposal1, Alice, Bob)
+	_, err := alice.HandleOutbound(proposal1, service.NewDIDCommContext(Alice, Bob, nil))
 	require.NoError(t, err)
 
-	_, err = alice.HandleOutbound(proposal2, Alice, Carol)
+	_, err = alice.HandleOutbound(proposal2, service.NewDIDCommContext(Alice, Carol, nil))
 	require.NoError(t, err)
 }
 
@@ -975,7 +975,7 @@ func TestService_ProposalWithRequest(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1061,7 +1061,7 @@ func TestService_ProposalWithRequestActionContinue(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1134,7 +1134,7 @@ func TestService_ProposalWithRequestSecond(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1209,7 +1209,7 @@ func TestService_ProposalWithRequestStopIntroduceeFirst(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1284,7 +1284,7 @@ func TestService_ProposalWithRequestStopIntroduceeSecond(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1329,7 +1329,7 @@ func TestService_ProposalWithRequestIntroducerStop(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1379,7 +1379,7 @@ func TestService_SkipProposalWithRequest(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1437,7 +1437,7 @@ func TestService_SkipProposalWithRequestStopIntroducee(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1475,7 +1475,7 @@ func TestService_ProposalWithRequestNoRecipients(t *testing.T) {
 		PleaseIntroduceTo: &introduce.PleaseIntroduceTo{To: introduce.To{
 			Name: Carol,
 		}},
-	}), Bob, Alice)
+	}), service.NewDIDCommContext(Bob, Alice, nil))
 	require.NoError(t, err)
 }
 
@@ -1590,7 +1590,7 @@ func TestService_HandleOutbound(t *testing.T) {
 		ch := make(chan service.DIDCommAction)
 		require.NoError(t, svc.RegisterActionEvent(ch))
 		const errMsg = "doHandle: invalid state transition: noop -> arranging"
-		_, err = svc.HandleOutbound(msg, "", "")
+		_, err = svc.HandleOutbound(msg, nil)
 		require.EqualError(t, err, errMsg)
 	})
 }

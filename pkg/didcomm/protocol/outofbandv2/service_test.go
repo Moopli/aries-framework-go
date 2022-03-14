@@ -113,7 +113,7 @@ func TestAccept(t *testing.T) {
 func TestHandleOutbound(t *testing.T) {
 	t.Run("out-of-band Outbound not supported", func(t *testing.T) {
 		s := newAutoService(t, testProvider(t))
-		_, err := s.HandleOutbound(nil, "", "")
+		_, err := s.HandleOutbound(nil, nil)
 		require.EqualError(t, err, "oob/2.0 not implemented")
 	})
 }

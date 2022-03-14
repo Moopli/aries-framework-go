@@ -1219,7 +1219,7 @@ func TestHandleOutbound(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = svc.HandleOutbound(service.DIDCommMsgMap{}, "", "")
+	_, err = svc.HandleOutbound(service.DIDCommMsgMap{}, nil)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "not implemented")
 }

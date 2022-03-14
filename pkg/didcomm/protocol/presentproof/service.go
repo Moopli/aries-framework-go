@@ -103,6 +103,7 @@ type metaData struct {
 	presentationNames     []string
 	properties            map[string]interface{}
 	msgClone              service.DIDCommMsg
+	connection            *service.ConnectionRecord
 	presentation          *PresentationV2
 	proposePresentation   *ProposePresentationV2
 	request               *RequestPresentationV2
@@ -412,8 +413,8 @@ func (s *Service) HandleInbound(msg service.DIDCommMsg, ctx service.DIDCommConte
 }
 
 // HandleOutbound handles outbound message (presentproof protocol).
-func (s *Service) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
-	logger.Debugf("service.HandleOutbound() input: msg=%+v myDID=%s theirDID=%s", msg, myDID, theirDID)
+func (s *Service) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
+	logger.Debugf("service.HandleOutbound() input: msg=%+v myDID=%s theirDID=%s", msg, ctx.MyDID(), ctx.TheirDID())
 
 	msgMap := msg.Clone()
 
@@ -422,8 +423,8 @@ func (s *Service) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string)
 		return "", fmt.Errorf("buildMetaData: %w", err)
 	}
 
-	md.MyDID = myDID
-	md.TheirDID = theirDID
+	md.MyDID = ctx.MyDID()
+	md.TheirDID = ctx.TheirDID()
 
 	thid, err := msgMap.ThreadID()
 	if err != nil {

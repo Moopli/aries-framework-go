@@ -54,8 +54,8 @@ func TestClient_SendOffer(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), issuecredential.OfferCredentialMsgTypeV2)
 
 				return expectedPiid, nil
@@ -77,8 +77,8 @@ func TestClient_SendOffer(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), issuecredential.OfferCredentialMsgTypeV3)
 
 				return expectedPiid, nil
@@ -121,8 +121,8 @@ func TestClient_SendProposal(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), issuecredential.ProposeCredentialMsgTypeV2)
 
 				return expectedPiid, nil
@@ -144,8 +144,8 @@ func TestClient_SendProposal(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), issuecredential.ProposeCredentialMsgTypeV3)
 
 				return expectedPiid, nil
@@ -188,8 +188,8 @@ func TestClient_SendRequest(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), issuecredential.RequestCredentialMsgTypeV2)
 
 				return expectedPiid, nil
@@ -211,8 +211,8 @@ func TestClient_SendRequest(t *testing.T) {
 		provider := mocks.NewMockProvider(ctrl)
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), issuecredential.RequestCredentialMsgTypeV3)
 
 				return expectedPiid, nil

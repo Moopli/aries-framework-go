@@ -520,7 +520,7 @@ func sendMsgEvent(
 }
 
 // HandleOutbound handles outbound messages.
-func (s *Service) HandleOutbound(_ service.DIDCommMsg, _, _ string) (string, error) {
+func (s *Service) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	// TODO implement
 	return "", errors.New("not implemented")
 }

@@ -200,7 +200,7 @@ func (s *Service) HandleInbound(msg service.DIDCommMsg, didCommCtx service.DIDCo
 }
 
 // HandleOutbound handles outbound messages.
-func (s *Service) HandleOutbound(_ service.DIDCommMsg, _, _ string) (string, error) {
+func (s *Service) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	// TODO implement
 	return "", errors.New("oob/2.0 not implemented")
 }
@@ -285,27 +285,6 @@ func (s *Service) AcceptInvitation(i *Invitation, opts ...AcceptOption) (string,
 
 	newDID.Service = services
 
-	if i.Body != nil && i.Body.GoalCode != "" {
-		serviceURL := s.msgTypeServicesTargets[i.Body.GoalCode]
-		for _, srvc := range s.allServices {
-			if strings.Contains(serviceURL, srvc.Name()) {
-				connID := s.handleInboundService(serviceURL, srvc, i.From, i.Requests, newDID)
-
-				if connID != "" {
-					logger.Debugf("oob/2.0 matching target service found for url '%v' and executed, "+
-						"oobv2.AcceptInvitation() is done.", serviceURL)
-					return connID, nil
-				}
-			}
-		}
-
-		logger.Debugf("oob/2.0 no matching target service found for url '%v', oobv2.AcceptInvitation() is done but"+
-			" no target service triggered", serviceURL)
-	}
-
-	logger.Debugf("oob/2.0 request body or Goal code is empty, oobv2.AcceptInvitation() is done but no" +
-		"target service triggered, generating a new peer DID for the first valid attachment and return it")
-
 	myDID, err := s.vdrRegistry.Create(peer.DIDMethod, newDID)
 	if err != nil {
 		return "", fmt.Errorf("oob/2.0 creating new DID via VDR failed: %w", err)
@@ -334,9 +313,30 @@ func (s *Service) AcceptInvitation(i *Invitation, opts ...AcceptOption) (string,
 		PeerDIDInitialState: initialState,
 	}
 
-	if err := s.connectionRecorder.SaveConnectionRecord(connRecord); err != nil {
+	if err = s.connectionRecorder.SaveConnectionRecord(connRecord); err != nil {
 		return "", fmt.Errorf("oob/2.0 failed to create connection: %w", err)
 	}
+
+	if i.Body != nil && i.Body.GoalCode != "" {
+		serviceURL := s.msgTypeServicesTargets[i.Body.GoalCode]
+		for _, srvc := range s.allServices {
+			if strings.Contains(serviceURL, srvc.Name()) {
+				_, err = s.handleInboundService(serviceURL, srvc, connRecord, i.Requests)
+
+				if err == nil {
+					logger.Debugf("oob/2.0 matching target service found for url '%v' and executed, "+
+						"oobv2.AcceptInvitation() is done.", serviceURL)
+					return connRecord.ConnectionID, nil
+				}
+			}
+		}
+
+		logger.Debugf("oob/2.0 no matching target service found for url '%v', oobv2.AcceptInvitation() is done but"+
+			" no target service triggered", serviceURL)
+	}
+
+	logger.Debugf("oob/2.0 request body or Goal code is empty, oobv2.AcceptInvitation() is done but no" +
+		"target service triggered, generating a new peer DID for the first valid attachment and return it")
 
 	return connRecord.ConnectionID, nil
 }
@@ -366,8 +366,8 @@ func (s *Service) SaveInvitation(inv *Invitation) error {
 	return s.connectionRecorder.SaveOOBv2Invitation(inv.From, *inv)
 }
 
-func (s *Service) handleInboundService(serviceURL string, srvc dispatcher.ProtocolService, senderDID string,
-	attachments []*decorator.AttachmentV2, newDID *did.Doc) string {
+func (s *Service) handleInboundService(serviceURL string, srvc dispatcher.ProtocolService,
+	conn *service.ConnectionRecord, attachments []*decorator.AttachmentV2) (string, error) {
 	for _, atchmnt := range attachments {
 		serviceRequest, err := atchmnt.Data.Fetch()
 		if err != nil {
@@ -387,17 +387,8 @@ func (s *Service) handleInboundService(serviceURL string, srvc dispatcher.Protoc
 			continue
 		}
 
-		myDID, err := s.vdrRegistry.Create(peer.DIDMethod, newDID)
-		if err != nil {
-			logger.Debugf("oob/2.0 fetching target service '%v' for url '%v' creating new DID via VDR "+
-				"failed: %v, skipping attachment entry..", srvc.Name(), serviceURL, err)
-
-			continue
-		}
-
 		// TODO bug: most services don't return a connection ID from handleInbound, we can't expect it from there.
-		connID, err := srvc.HandleInbound(didCommMsgRequest, service.NewDIDCommContext(myDID.DIDDocument.ID,
-			senderDID, nil))
+		connID, err := srvc.HandleInbound(didCommMsgRequest, service.ConnectionDIDCommContext(conn, nil))
 		if err != nil {
 			logger.Debugf("oob/2.0 executing target service '%v' for url '%v' failed: %v, skipping "+
 				"attachment entry..", srvc.Name(), serviceURL, err)
@@ -408,10 +399,10 @@ func (s *Service) handleInboundService(serviceURL string, srvc dispatcher.Protoc
 		logger.Debugf("oob/2.0 successfully executed target service '%v' for target url: '%v', returned id: %v",
 			srvc.Name(), serviceURL, connID)
 
-		return connID
+		return connID, nil
 	}
 
-	return ""
+	return "", fmt.Errorf("no successful target service")
 }
 
 // TODO below function and sub functions are copied from pkg/didcomm/protocol/didexchange/keys.go

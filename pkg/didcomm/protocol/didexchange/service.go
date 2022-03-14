@@ -306,7 +306,7 @@ func (s *Service) Accept(msgType string) bool {
 }
 
 // HandleOutbound handles outbound didexchange messages.
-func (s *Service) HandleOutbound(_ service.DIDCommMsg, _, _ string) (string, error) {
+func (s *Service) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	return "", errors.New("not implemented")
 }
 

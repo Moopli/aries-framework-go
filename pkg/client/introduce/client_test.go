@@ -78,16 +78,16 @@ func TestClient_SendProposal(t *testing.T) {
 
 		svc := mocksintroduce.NewMockProtocolService(ctrl)
 		svc.EXPECT().
-			HandleOutbound(gomock.Any(), "firstMyDID", "firstTheirDID").
-			DoAndReturn(func(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+			HandleOutbound(gomock.Any(), service.NewDIDCommContext("firstMyDID", "firstTheirDID", nil)).
+			DoAndReturn(func(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), introduce.ProposalMsgType)
 				require.NotEmpty(t, msg.Metadata())
 
 				return expectedPIID, nil
 			})
 		svc.EXPECT().
-			HandleOutbound(gomock.Any(), "secondMyDID", "secondTheirDID").
-			DoAndReturn(func(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+			HandleOutbound(gomock.Any(), service.NewDIDCommContext("secondMyDID", "secondTheirDID", nil)).
+			DoAndReturn(func(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), introduce.ProposalMsgType)
 				require.NotEmpty(t, msg.Metadata())
 
@@ -116,7 +116,7 @@ func TestClient_SendProposal(t *testing.T) {
 
 		svc := mocksintroduce.NewMockProtocolService(ctrl)
 		svc.EXPECT().
-			HandleOutbound(gomock.Any(), "firstMyDID", "firstTheirDID").
+			HandleOutbound(gomock.Any(), service.NewDIDCommContext("firstMyDID", "firstTheirDID", nil)).
 			Return("", errors.New(errMsg))
 
 		provider.EXPECT().Service(gomock.Any()).Return(svc, nil)
@@ -140,8 +140,8 @@ func TestClient_SendProposalWithOOBInvitation(t *testing.T) {
 
 	svc := mocksintroduce.NewMockProtocolService(ctrl)
 	svc.EXPECT().
-		HandleOutbound(gomock.Any(), "firstMyDID", "firstTheirDID").
-		DoAndReturn(func(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+		HandleOutbound(gomock.Any(), service.NewDIDCommContext("firstMyDID", "firstTheirDID", nil)).
+		DoAndReturn(func(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 			require.Equal(t, msg.Type(), introduce.ProposalMsgType)
 			require.NotEmpty(t, msg.Metadata())
 
@@ -169,8 +169,8 @@ func TestClient_SendRequest(t *testing.T) {
 
 	svc := mocksintroduce.NewMockProtocolService(ctrl)
 	svc.EXPECT().
-		HandleOutbound(gomock.Any(), "firstMyDID", "firstTheirDID").
-		DoAndReturn(func(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+		HandleOutbound(gomock.Any(), service.NewDIDCommContext("firstMyDID", "firstTheirDID", nil)).
+		DoAndReturn(func(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 			require.Equal(t, msg.Type(), introduce.RequestMsgType)
 			require.Empty(t, msg.Metadata())
 

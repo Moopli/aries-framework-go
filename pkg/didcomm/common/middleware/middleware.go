@@ -92,9 +92,9 @@ const (
 func (h *DIDCommMessageMiddleware) HandleInboundMessage( // nolint:gocyclo,funlen
 	msg didcomm.DIDCommMsgMap,
 	theirDID, myDID string,
-	mtps []string, // nolint:unparam
+	mtps []string,
 ) (*didcomm.ConnectionRecord, error) {
-	msgType, err := h.getInboundMessageType(msg, myDID)
+	msgType, inv, err := h.getInboundMessageType(msg, myDID)
 	if err != nil {
 		return nil, err
 	}
@@ -109,30 +109,34 @@ func (h *DIDCommMessageMiddleware) HandleInboundMessage( // nolint:gocyclo,funle
 	case inboundInvitationAcceptance:
 		// GetConnectionRecordByDIDs(myDID, theirDID)
 		// if no connection, return new (not-yet-saved) connection record
-		// TODO: use the inbound Media Type Profile for the mtp when creating a new connection
-		rec, updatedConnRec, err = h.handleInboundInvitationAcceptance(theirDID, myDID)
+		rec, updatedConnRec, err = h.handleInboundInvitationAcceptance(theirDID, myDID, mtps, inv)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invite: %w", err)
 		}
 	case inboundRotation:
 		// GetConnectionRecordByTheirDID(theirOldDID), GetConnectionRecordByTheirDID(theirNewDID)
 		rec, updatedConnRec, err = h.handleInboundRotate(msg, theirDID, myDID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("rotate: %w", err)
 		}
 	}
 
-	if isV2 {
+	// TODO refactor: a rotate can be a rotate ack, but an invitation acceptance can't be either
+
+	if isV2 { // nolint: nestif
+		// TODO: if we rotated, then we have two connection records under theirDID
+		//  we have a workaround for when we accidentally load the *old* connection record
+		//  but it would be better to delete the old one and keep the new one
 		if rec == nil {
 			rec, err = h.connStore.GetConnectionRecordByTheirDID(theirDID)
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("get by their did '%s': %w", theirDID, err)
 			}
 		}
 
-		rec2, stepUpdated, err := h.handleInboundRotateAck(myDID, rec)
-		if err != nil {
-			return nil, err
+		rec2, stepUpdated, e := h.handleInboundRotateAck(myDID, rec)
+		if e != nil {
+			return nil, fmt.Errorf("ack: %w", e)
 		}
 
 		updatedConnRec = updatedConnRec || stepUpdated
@@ -143,6 +147,7 @@ func (h *DIDCommMessageMiddleware) HandleInboundMessage( // nolint:gocyclo,funle
 	}
 
 	// handle inbound ack of peer DID
+	// TODO: can an invitation acceptance be a peer DID ack?
 	if rec != nil && rec.PeerDIDInitialState != "" && myDID == rec.MyDID {
 		rec.PeerDIDInitialState = ""
 		updatedConnRec = true
@@ -188,38 +193,38 @@ func (h *DIDCommMessageMiddleware) HandleOutboundMessage(msg didcomm.DIDCommMsgM
 }
 
 func (h *DIDCommMessageMiddleware) getInboundMessageType(msg didcomm.DIDCommMsgMap, recipientDID string,
-) (inboundMessageType, error) {
+) (inboundMessageType, *invitationStub, error) {
 	isV2 := didcomm.IsDIDCommV2(&msg)
 
 	if _, theyRotate := msg[fromPriorJSONKey]; theyRotate {
-		return inboundRotation, nil
+		return inboundRotation, nil, nil
 	}
 
 	didParsed, err := did.Parse(recipientDID)
 	if err != nil {
 		if !isV2 {
-			return inboundOther, nil
+			return inboundOther, nil, nil
 		}
 
-		return inboundOther, fmt.Errorf("parsing inbound recipient DID: %w", err)
+		return inboundOther, nil, fmt.Errorf("parsing inbound recipient DID: %w", err)
 	}
 
 	if didParsed.Method == peer.DIDMethod { // TODO any more exception cases like peer?
 		// can't be an invitation DID
-		return inboundOther, nil
+		return inboundOther, nil, nil
 	}
 
 	inv := &invitationStub{}
 
 	err = h.connStore.GetOOBv2Invitation(recipientDID, inv)
 	if err == nil {
-		return inboundInvitationAcceptance, nil
+		return inboundInvitationAcceptance, inv, nil
 	} else if errors.Is(err, storage.ErrDataNotFound) {
 		// if there's no invitation, this message isn't an acceptance
-		return inboundOther, nil
+		return inboundOther, nil, nil
 	}
 
-	return inboundOther, err
+	return inboundOther, nil, err
 }
 
 type invitationStub struct {
@@ -227,29 +232,11 @@ type invitationStub struct {
 	ID   string `json:"id"`
 }
 
-func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(senderDID, recipientDID string,
+func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(
+	senderDID, recipientDID string,
+	senderMTPs []string,
+	inv *invitationStub,
 ) (*didcomm.ConnectionRecord, bool, error) {
-	didParsed, err := did.Parse(recipientDID)
-	if err != nil {
-		logger.Warnf("failed to parse inbound recipient DID: %s", err.Error())
-		return nil, false, nil
-	}
-
-	if didParsed.Method == peer.DIDMethod { // TODO any more exception cases like peer?
-		// can't be an invitation DID
-		return nil, false, nil
-	}
-
-	inv := &invitationStub{}
-
-	err = h.connStore.GetOOBv2Invitation(recipientDID, inv)
-	if errors.Is(err, storage.ErrDataNotFound) {
-		// if there's no invitation, this message isn't an acceptance
-		return nil, false, nil
-	} else if err != nil {
-		return nil, false, err
-	}
-
 	rec, err := h.connStore.GetConnectionRecordByDIDs(recipientDID, senderDID)
 	if err == nil {
 		return rec, false, nil
@@ -264,7 +251,7 @@ func (h *DIDCommMessageMiddleware) handleInboundInvitationAcceptance(senderDID, 
 		MyDID:             recipientDID,
 		TheirDID:          senderDID,
 		InvitationID:      inv.ID,
-		MediaTypeProfiles: h.mediaTypeProfiles,
+		MediaTypeProfiles: intersect(h.mediaTypeProfiles, senderMTPs),
 		DIDCommVersion:    didcomm.V2,
 	}
 
@@ -396,19 +383,22 @@ func (h *DIDCommMessageMiddleware) handleInboundRotateAck(recipientDID string, r
 	var updatedConnRec bool
 
 	// if we performed a did rotation, check if they acknowledge it
-	if rec.MyDIDRotation != nil {
-		// check if they sent to our old DID or our new DID
-		switch recipientDID {
-		case rec.MyDIDRotation.OldDID:
-			// they used our old DID
-		case rec.MyDIDRotation.NewDID:
-			// they used our new DID, so we don't need to rotate anymore
-			rec.MyDIDRotation = nil
-			updatedConnRec = true
-		default:
-			return nil, false, fmt.Errorf("inbound message sent to unexpected DID")
-		}
+	// and if they sent to our old DID or our new DID
+	if rec.MyDIDRotation == nil || recipientDID == rec.MyDIDRotation.OldDID {
+		return rec, false, nil
 	}
+
+	if recipientDID != rec.MyDIDRotation.NewDID {
+		return nil, false, fmt.Errorf("inbound message sent to unexpected DID")
+	}
+
+	// they used our new DID, so we don't need to rotate anymore
+	if rec.MyDIDRotation.NewDID != rec.MyDID {
+		rec.MyDID = rec.MyDIDRotation.NewDID
+	}
+
+	rec.MyDIDRotation = nil
+	updatedConnRec = true
 
 	return rec, updatedConnRec, nil
 }
@@ -666,4 +656,28 @@ func vmToBytesTypeCrv(vm *did.VerificationMethod) ([]byte, kms.KeyType, string, 
 	default:
 		return nil, "", "", fmt.Errorf("vm.Type '%s' not supported", vm.Type)
 	}
+}
+
+func list2set(list []string) map[string]struct{} {
+	out := map[string]struct{}{}
+
+	for _, s := range list {
+		out[s] = struct{}{}
+	}
+
+	return out
+}
+
+func intersect(a1, a2 []string) []string {
+	set := list2set(a2)
+
+	var out []string
+
+	for _, s := range a1 {
+		if _, ok := set[s]; ok {
+			out = append(out, s)
+		}
+	}
+
+	return out
 }

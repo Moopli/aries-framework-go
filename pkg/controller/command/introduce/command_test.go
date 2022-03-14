@@ -164,7 +164,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("error message"))
 
@@ -188,7 +188,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service := mocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any()).Times(2)
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).Times(2)
 
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
@@ -259,7 +259,7 @@ func TestCommand_SendProposalWithOOBInvitation(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("error message"))
 
@@ -283,7 +283,7 @@ func TestCommand_SendProposalWithOOBInvitation(t *testing.T) {
 		service := mocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)
@@ -369,7 +369,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("error message"))
 
@@ -394,7 +394,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service := mocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		provider := mocks.NewMockProvider(ctrl)
 		provider.EXPECT().Service(gomock.Any()).Return(service, nil)

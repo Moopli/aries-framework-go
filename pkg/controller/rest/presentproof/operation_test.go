@@ -35,7 +35,7 @@ func provider(ctrl *gomock.Controller, lookup *connection.Lookup) *mocks2.MockPr
 	service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 	service.EXPECT().ActionContinue(gomock.Any(), gomock.Any()).AnyTimes()
 	service.EXPECT().ActionStop(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
-	service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any()).AnyTimes()
+	service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).AnyTimes()
 
 	provider := mocks2.NewMockProvider(ctrl)
 	provider.EXPECT().Service(gomock.Any()).Return(service, nil)

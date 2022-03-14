@@ -47,9 +47,9 @@ func (m *MockMediatorSvc) HandleInbound(msg service.DIDCommMsg, ctx service.DIDC
 }
 
 // HandleOutbound msg.
-func (m *MockMediatorSvc) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+func (m *MockMediatorSvc) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	if m.HandleOutboundFunc != nil {
-		return m.HandleOutboundFunc(msg, myDID, theirDID)
+		return m.HandleOutboundFunc(msg, ctx.MyDID(), ctx.TheirDID())
 	}
 
 	return "", nil

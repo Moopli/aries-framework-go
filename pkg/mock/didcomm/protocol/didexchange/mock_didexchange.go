@@ -60,9 +60,9 @@ func (m *MockDIDExchangeSvc) HandleInbound(msg service.DIDCommMsg, ctx service.D
 }
 
 // HandleOutbound msg.
-func (m *MockDIDExchangeSvc) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+func (m *MockDIDExchangeSvc) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	if m.HandleOutboundFunc != nil {
-		return m.HandleOutboundFunc(msg, myDID, theirDID)
+		return m.HandleOutboundFunc(msg, ctx.MyDID(), ctx.TheirDID())
 	}
 
 	return "", nil

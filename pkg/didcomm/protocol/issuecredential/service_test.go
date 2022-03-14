@@ -2116,7 +2116,7 @@ func TestService_HandleOutbound(t *testing.T) {
 		msg := service.NewDIDCommMsgMap(struct{}{})
 		msg.SetID(uuid.New().String())
 
-		piid, err := svc.HandleOutbound(msg, "", "")
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext("", "", nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "doHandle: getCurrentStateNameAndPIID: currentStateName: "+errMsg)
 	})
@@ -2131,7 +2131,7 @@ func TestService_HandleOutbound(t *testing.T) {
 
 		piid, err := svc.HandleOutbound(service.NewDIDCommMsgMap(ProposeCredentialV2{
 			Type: "none",
-		}), "", "")
+		}), service.NewDIDCommContext("", "", nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "doHandle: nextState: unrecognized msgType: none")
 	})
@@ -2162,7 +2162,7 @@ func TestService_HandleOutbound(t *testing.T) {
 				return nil
 			})
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NoError(t, err)
 		require.NotEmpty(t, piid)
 
@@ -2189,7 +2189,7 @@ func TestService_HandleOutbound(t *testing.T) {
 
 		messenger.EXPECT().Send(msg, Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "action proposal-sent: "+errMsg)
 	})
@@ -2220,7 +2220,7 @@ func TestService_HandleOutbound(t *testing.T) {
 				return nil
 			})
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NotEmpty(t, piid)
 		require.NoError(t, err)
 
@@ -2247,7 +2247,7 @@ func TestService_HandleOutbound(t *testing.T) {
 
 		messenger.EXPECT().Send(msg, Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "action offer-sent: "+errMsg)
 	})
@@ -2278,7 +2278,7 @@ func TestService_HandleOutbound(t *testing.T) {
 				return nil
 			})
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NotEmpty(t, piid)
 		require.NoError(t, err)
 
@@ -2305,7 +2305,7 @@ func TestService_HandleOutbound(t *testing.T) {
 
 		messenger.EXPECT().Send(msg, Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "action request-sent: "+errMsg)
 	})
@@ -2363,7 +2363,7 @@ func TestService_HandleOutboundV3(t *testing.T) {
 				return nil
 			})
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NotEmpty(t, piid)
 		require.NoError(t, err)
 
@@ -2389,7 +2389,7 @@ func TestService_HandleOutboundV3(t *testing.T) {
 
 		messenger.EXPECT().Send(msg, Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "action proposal-sent: "+errMsg)
 	})
@@ -2419,7 +2419,7 @@ func TestService_HandleOutboundV3(t *testing.T) {
 				return nil
 			})
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NotEmpty(t, piid)
 		require.NoError(t, err)
 
@@ -2445,7 +2445,7 @@ func TestService_HandleOutboundV3(t *testing.T) {
 
 		messenger.EXPECT().Send(msg, Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "action offer-sent: "+errMsg)
 	})
@@ -2475,7 +2475,7 @@ func TestService_HandleOutboundV3(t *testing.T) {
 				return nil
 			})
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NotEmpty(t, piid)
 		require.NoError(t, err)
 
@@ -2501,7 +2501,7 @@ func TestService_HandleOutboundV3(t *testing.T) {
 
 		messenger.EXPECT().Send(msg, Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		piid, err := svc.HandleOutbound(msg, Alice, Bob)
+		piid, err := svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Empty(t, piid)
 		require.Contains(t, fmt.Sprintf("%v", err), "action request-sent: "+errMsg)
 	})

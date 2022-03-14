@@ -345,8 +345,8 @@ func (s *Service) HandleInbound(msg service.DIDCommMsg, ctx service.DIDCommConte
 }
 
 // HandleOutbound handles outbound route coordination messages.
-func (s *Service) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
-	logger.Debugf("service.HandleOutbound input: msg=%+v myDID=%s theirDID=%s", msg, myDID, theirDID)
+func (s *Service) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
+	logger.Debugf("service.HandleOutbound input: msg=%+v myDID=%s theirDID=%s", msg, ctx.MyDID(), ctx.TheirDID())
 
 	if !s.Accept(msg.Type()) {
 		return "", fmt.Errorf("unsupported message type %s", msg.Type())
@@ -354,7 +354,7 @@ func (s *Service) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string)
 
 	switch msg.Type() {
 	case RequestMsgType:
-		return "", s.handleOutboundRequest(msg, myDID, theirDID)
+		return "", s.handleOutboundRequest(msg, ctx.MyDID(), ctx.TheirDID())
 	default:
 		return "", fmt.Errorf("invalid or unsupported outbound message type %s", msg.Type())
 	}

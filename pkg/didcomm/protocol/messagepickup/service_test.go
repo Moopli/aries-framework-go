@@ -885,7 +885,7 @@ func TestHandleOutbound(t *testing.T) {
 			},
 		}
 
-		_, err = svc.HandleOutbound(nil, "not", "implemented")
+		_, err = svc.HandleOutbound(nil, nil)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "not implemented")
 	})

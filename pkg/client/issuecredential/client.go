@@ -153,7 +153,7 @@ func (c *Client) SendOffer(offer *OfferCredential, conn *service.ConnectionRecor
 		msg = service.NewDIDCommMsgMap(offer.AsV3())
 	}
 
-	return c.service.HandleOutbound(msg, conn.MyDID, conn.TheirDID)
+	return c.service.HandleOutbound(msg, service.ConnectionDIDCommContext(conn, nil))
 }
 
 // SendProposal is used by the Holder to send a proposal.
@@ -177,7 +177,7 @@ func (c *Client) SendProposal(proposal *ProposeCredential, conn *service.Connect
 		msg = service.NewDIDCommMsgMap(proposal.AsV3())
 	}
 
-	return c.service.HandleOutbound(msg, conn.MyDID, conn.TheirDID)
+	return c.service.HandleOutbound(msg, service.ConnectionDIDCommContext(conn, nil))
 }
 
 // SendRequest is used by the Holder to send a request.
@@ -201,7 +201,7 @@ func (c *Client) SendRequest(request *RequestCredential, conn *service.Connectio
 		msg = service.NewDIDCommMsgMap(request.AsV3())
 	}
 
-	return c.service.HandleOutbound(msg, conn.MyDID, conn.TheirDID)
+	return c.service.HandleOutbound(msg, service.ConnectionDIDCommContext(conn, nil))
 }
 
 // AcceptProposal is used when the Issuer is willing to accept the proposal.

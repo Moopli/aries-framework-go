@@ -163,19 +163,32 @@ func (handler *MessageHandler) HandleInboundEnvelope(envelope *transport.Envelop
 		switch foundService.Name() {
 		// perf: DID exchange doesn't require myDID and theirDID
 		case didexchange.DIDExchange:
+			_, err = foundService.HandleInbound(msg, service.NewDIDCommContext("", "", nil))
+
+			return err
 		default:
 			if !gotDIDs {
-				myDID, theirDID, err = handler.getDIDs(envelope, msg)
-				if err != nil {
-					return fmt.Errorf("inbound message handler: %w", err)
-				}
+				// note: should no longer ever get here
+				panic("should never get here")
+				// myDID, theirDID, err = handler.getDIDs(envelope, msg)
+				// if err != nil {
+				// 	return fmt.Errorf("inbound message handler: %w", err)
+				// }
+			}
+		}
+
+		// when is rec nil, besides didexchange?
+		if rec == nil {
+			rec = &service.ConnectionRecord{
+				MyDID:    myDID,
+				TheirDID: theirDID,
 			}
 		}
 
 		// TODO: add connection record to service.DIDCommContext, with the record returned by the middleware
 		//  - this would require a major refactor, however, to avoid an import cycle...
 		//    note: refactor done!
-		_, err = foundService.HandleInbound(msg, service.NewDIDCommContext(myDID, theirDID, nil))
+		_, err = foundService.HandleInbound(msg, service.ConnectionDIDCommContext(rec, nil))
 
 		return err
 	}
@@ -208,7 +221,15 @@ func (handler *MessageHandler) HandleInboundEnvelope(envelope *transport.Envelop
 				}
 			}
 
-			return handler.tryToHandle(foundMessageService, msg, service.NewDIDCommContext(myDID, theirDID, nil))
+			// when is rec nil?
+			if rec == nil {
+				rec = &service.ConnectionRecord{
+					MyDID:    myDID,
+					TheirDID: theirDID,
+				}
+			}
+
+			return handler.tryToHandle(foundMessageService, msg, service.ConnectionDIDCommContext(rec, nil))
 		}
 	}
 

@@ -658,7 +658,7 @@ func (m *mockService) HandleInbound(service.DIDCommMsg, service.DIDCommContext) 
 	return "", nil
 }
 
-func (m *mockService) HandleOutbound(service.DIDCommMsg, string, string) (string, error) {
+func (m *mockService) HandleOutbound(service.DIDCommMsg, service.DIDCommContext) (string, error) {
 	return "", nil
 }
 

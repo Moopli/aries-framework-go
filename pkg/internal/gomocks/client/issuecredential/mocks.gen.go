@@ -142,18 +142,18 @@ func (mr *MockProtocolServiceMockRecorder) HandleInbound(arg0, arg1 interface{})
 }
 
 // HandleOutbound mocks base method.
-func (m *MockProtocolService) HandleOutbound(arg0 service.DIDCommMsg, arg1, arg2 string) (string, error) {
+func (m *MockProtocolService) HandleOutbound(arg0 service.DIDCommMsg, arg1 service.DIDCommContext) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "HandleOutbound", arg0, arg1, arg2)
+	ret := m.ctrl.Call(m, "HandleOutbound", arg0, arg1)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // HandleOutbound indicates an expected call of HandleOutbound.
-func (mr *MockProtocolServiceMockRecorder) HandleOutbound(arg0, arg1, arg2 interface{}) *gomock.Call {
+func (mr *MockProtocolServiceMockRecorder) HandleOutbound(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleOutbound", reflect.TypeOf((*MockProtocolService)(nil).HandleOutbound), arg0, arg1, arg2)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HandleOutbound", reflect.TypeOf((*MockProtocolService)(nil).HandleOutbound), arg0, arg1)
 }
 
 // RegisterActionEvent mocks base method.

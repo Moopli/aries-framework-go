@@ -54,8 +54,8 @@ func TestClient_SendRequestPresentation(t *testing.T) {
 		thid := uuid.New().String()
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), presentproof.RequestPresentationMsgTypeV2)
 
 				return thid, nil
@@ -103,8 +103,8 @@ func TestClient_SendRequestPresentationV3(t *testing.T) {
 		thid := uuid.New().String()
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), presentproof.RequestPresentationMsgTypeV3)
 
 				return thid, nil
@@ -154,8 +154,8 @@ func TestClient_SendProposePresentation(t *testing.T) {
 		thid := uuid.New().String()
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), presentproof.ProposePresentationMsgTypeV2)
 
 				return thid, nil
@@ -203,8 +203,8 @@ func TestClient_SendProposePresentationV3(t *testing.T) {
 		thid := uuid.New().String()
 
 		svc := mocks.NewMockProtocolService(ctrl)
-		svc.EXPECT().HandleOutbound(gomock.Any(), Alice, Bob).
-			DoAndReturn(func(msg service.DIDCommMsg, _, _ string) (string, error) {
+		svc.EXPECT().HandleOutbound(gomock.Any(), gomock.Any()).
+			DoAndReturn(func(msg service.DIDCommMsg, _ service.DIDCommContext) (string, error) {
 				require.Equal(t, msg.Type(), presentproof.ProposePresentationMsgTypeV3)
 
 				return thid, nil

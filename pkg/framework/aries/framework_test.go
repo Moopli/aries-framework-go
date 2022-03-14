@@ -800,7 +800,7 @@ func (m mockProtocolService) HandleInbound(msg service.DIDCommMsg, ctx service.D
 	panic("implement me")
 }
 
-func (m mockProtocolService) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+func (m mockProtocolService) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	panic("implement me")
 }
 

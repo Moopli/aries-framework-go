@@ -44,9 +44,9 @@ func (m *MockPresentProofSvc) HandleInbound(msg service.DIDCommMsg, ctx service.
 }
 
 // HandleOutbound msg.
-func (m *MockPresentProofSvc) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+func (m *MockPresentProofSvc) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	if m.HandleOutboundFunc != nil {
-		return m.HandleOutboundFunc(msg, myDID, theirDID)
+		return m.HandleOutboundFunc(msg, ctx.MyDID(), ctx.TheirDID())
 	}
 
 	return "", nil

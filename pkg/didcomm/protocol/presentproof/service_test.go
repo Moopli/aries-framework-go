@@ -1328,7 +1328,7 @@ func TestService_HandleInboundOutbound(t *testing.T) {
 				return nil
 			})
 
-		_, err = svc.HandleOutbound(msg, Alice, Bob)
+		_, err = svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NoError(t, err)
 
 		select {
@@ -1356,7 +1356,7 @@ func TestService_HandleInboundOutbound(t *testing.T) {
 
 		messenger.EXPECT().Send(gomock.Any(), Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		_, err = svc.HandleOutbound(msg, Alice, Bob)
+		_, err = svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Contains(t, fmt.Sprintf("%v", err), "action request-sent: "+errMsg)
 	})
 
@@ -1393,7 +1393,7 @@ func TestService_HandleInboundOutbound(t *testing.T) {
 				return nil
 			})
 
-		_, err = svc.HandleOutbound(msg, Alice, Bob)
+		_, err = svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.NoError(t, err)
 
 		select {
@@ -1421,7 +1421,7 @@ func TestService_HandleInboundOutbound(t *testing.T) {
 
 		messenger.EXPECT().Send(gomock.Any(), Alice, Bob, gomock.Any()).Return(errors.New(errMsg))
 
-		_, err = svc.HandleOutbound(msg, Alice, Bob)
+		_, err = svc.HandleOutbound(msg, service.NewDIDCommContext(Alice, Bob, nil))
 		require.Contains(t, fmt.Sprintf("%v", err), "action proposal-sent: "+errMsg)
 	})
 }

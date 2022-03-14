@@ -157,7 +157,7 @@ func (s *Service) HandleInbound(msg service.DIDCommMsg, ctx service.DIDCommConte
 }
 
 // HandleOutbound adherence to dispatcher.ProtocolService.
-func (s *Service) HandleOutbound(_ service.DIDCommMsg, _, _ string) (string, error) {
+func (s *Service) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	return "", errors.New("not implemented")
 }
 

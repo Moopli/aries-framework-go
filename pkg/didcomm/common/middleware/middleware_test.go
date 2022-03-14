@@ -285,51 +285,6 @@ func TestDIDRotator_HandleOutboundMessage(t *testing.T) {
 }
 
 func TestHandleInboundAccept(t *testing.T) {
-	t.Run("skip:  failed to parse recipient DID", func(t *testing.T) {
-		h := createBlankDIDRotator(t)
-
-		rec, _, err := h.handleInboundInvitationAcceptance("", "")
-		require.NoError(t, err)
-		require.Nil(t, rec)
-	})
-
-	t.Run("skip: recipient DID is peer", func(t *testing.T) {
-		h := createBlankDIDRotator(t)
-
-		rec, _, err := h.handleInboundInvitationAcceptance("", "did:peer:abc")
-		require.NoError(t, err)
-		require.Nil(t, rec)
-	})
-
-	t.Run("skip: we have no invitation for the DID they sent to", func(t *testing.T) {
-		h := createBlankDIDRotator(t)
-
-		rec, _, err := h.handleInboundInvitationAcceptance("", myDID)
-		require.NoError(t, err)
-		require.Nil(t, rec)
-	})
-
-	t.Run("fail: error reading from connection store for our invitation", func(t *testing.T) {
-		h := createBlankDIDRotator(t)
-
-		expectedErr := fmt.Errorf("store get error")
-
-		var err error
-		h.connStore, err = connection.NewRecorder(&mockProvider{
-			storeProvider: mockstorage.NewCustomMockStoreProvider(
-				&mockstorage.MockStore{
-					Store:  map[string]mockstorage.DBEntry{},
-					ErrGet: expectedErr,
-				}),
-		})
-		require.NoError(t, err)
-
-		rec, _, err := h.handleInboundInvitationAcceptance("", myDID)
-		require.Error(t, err)
-		require.Nil(t, rec)
-		require.ErrorIs(t, err, expectedErr)
-	})
-
 	t.Run("fail: error reading connection", func(t *testing.T) {
 		h := createBlankDIDRotator(t)
 
@@ -345,12 +300,7 @@ func TestHandleInboundAccept(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		err = h.connStore.SaveOOBv2Invitation(myDID, invitationStub{
-			Type: oobV2Type,
-		})
-		require.NoError(t, err)
-
-		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
+		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID, nil, &invitationStub{})
 		require.Nil(t, rec)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to get connection record")
@@ -360,32 +310,14 @@ func TestHandleInboundAccept(t *testing.T) {
 	t.Run("skip: connection already exists between invitation DID and invitee DID", func(t *testing.T) {
 		h := createBlankDIDRotator(t)
 
-		err := h.connStore.SaveOOBv2Invitation(myDID, invitationStub{
-			Type: oobV2Type,
-		})
-		require.NoError(t, err)
-
-		err = h.connStore.SaveConnectionRecord(&service.ConnectionRecord{
+		err := h.connStore.SaveConnectionRecord(&service.ConnectionRecord{
 			ConnectionID: "conn-123",
 			TheirDID:     theirDID,
 			MyDID:        myDID,
 		})
 		require.NoError(t, err)
 
-		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
-		require.NoError(t, err)
-		require.NotNil(t, rec)
-	})
-
-	t.Run("fail: error creating connection record for new connection", func(t *testing.T) {
-		h := createBlankDIDRotator(t)
-
-		err := h.connStore.SaveOOBv2Invitation(myDID, invitationStub{
-			Type: oobV2Type,
-		})
-		require.NoError(t, err)
-
-		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID)
+		rec, _, err := h.handleInboundInvitationAcceptance(theirDID, myDID, nil, &invitationStub{})
 		require.NoError(t, err)
 		require.NotNil(t, rec)
 

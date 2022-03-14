@@ -335,15 +335,15 @@ func (s *Service) HandleInbound(msg service.DIDCommMsg, ctx service.DIDCommConte
 }
 
 // HandleOutbound handles outbound message (introduce protocol).
-func (s *Service) HandleOutbound(msg service.DIDCommMsg, myDID, theirDID string) (string, error) {
+func (s *Service) HandleOutbound(msg service.DIDCommMsg, ctx service.DIDCommContext) (string, error) {
 	md, err := s.doHandle(msg, true)
 	if err != nil {
 		return "", fmt.Errorf("doHandle: %w", err)
 	}
 
 	// sets outbound payload
-	md.MyDID = myDID
-	md.TheirDID = theirDID
+	md.MyDID = ctx.MyDID()
+	md.TheirDID = ctx.TheirDID()
 
 	return md.PIID, s.handle(md)
 }

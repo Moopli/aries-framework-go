@@ -240,7 +240,7 @@ func TestCommand_SendOffer(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
@@ -271,7 +271,7 @@ func TestCommand_SendOffer(t *testing.T) {
 		service := clientmocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
@@ -296,7 +296,7 @@ func TestCommand_SendOffer(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
@@ -328,7 +328,7 @@ func TestCommand_SendOffer(t *testing.T) {
 		service := clientmocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
@@ -434,7 +434,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
@@ -465,7 +465,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service := clientmocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
@@ -490,7 +490,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
@@ -522,7 +522,7 @@ func TestCommand_SendProposal(t *testing.T) {
 		service := clientmocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
@@ -628,7 +628,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
@@ -659,7 +659,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service := clientmocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:    "id",
@@ -684,7 +684,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
 		service.EXPECT().HandleOutbound(
-			gomock.Any(), gomock.Any(),
+			gomock.Any(),
 			gomock.Any(),
 		).Return("", errors.New("some error message"))
 
@@ -716,7 +716,7 @@ func TestCommand_SendRequest(t *testing.T) {
 		service := clientmocks.NewMockProtocolService(ctrl)
 		service.EXPECT().RegisterActionEvent(gomock.Any()).Return(nil)
 		service.EXPECT().RegisterMsgEvent(gomock.Any()).Return(nil)
-		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any(), gomock.Any())
+		service.EXPECT().HandleOutbound(gomock.Any(), gomock.Any())
 
 		rec := mockConnectionRecorder(t, didcomm.ConnectionRecord{
 			MyDID:          "id",
@@ -1573,7 +1573,7 @@ func (m *mockProtocol) HandleInbound(didcomm.DIDCommMsg, didcomm.DIDCommContext)
 	panic("implement me")
 }
 
-func (m *mockProtocol) HandleOutbound(didcomm.DIDCommMsg, string, string) (string, error) {
+func (m *mockProtocol) HandleOutbound(didcomm.DIDCommMsg, didcomm.DIDCommContext) (string, error) {
 	panic("implement me")
 }
 

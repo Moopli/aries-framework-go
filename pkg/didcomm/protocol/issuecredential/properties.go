@@ -6,7 +6,11 @@ SPDX-License-Identifier: Apache-2.0
 
 package issuecredential
 
-import "errors"
+import (
+	"errors"
+
+	didcomm "github.com/hyperledger/aries-framework-go/pkg/didcomm/common/service"
+)
 
 const (
 	myDIDPropKey    = "myDID"
@@ -48,6 +52,10 @@ func (e *eventProps) TheirDID() string {
 
 func (e *eventProps) PIID() string {
 	return e.piid
+}
+
+func (e *eventProps) Connection() *didcomm.ConnectionRecord {
+	return nil
 }
 
 func (e eventProps) Err() error {

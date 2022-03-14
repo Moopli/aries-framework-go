@@ -127,7 +127,7 @@ func (c *Client) SendRequestPresentation(
 			WillConfirm:                params.WillConfirm,
 			Formats:                    params.Formats,
 			RequestPresentationsAttach: decorator.GenericAttachmentsToV1(params.Attachments),
-		}), connRec.MyDID, connRec.TheirDID)
+		}), service.ConnectionDIDCommContext(connRec, nil))
 	case service.V2:
 		return c.service.HandleOutbound(service.NewDIDCommMsgMap(&RequestPresentationV3{
 			Type: presentproof.RequestPresentationMsgTypeV3,
@@ -137,7 +137,7 @@ func (c *Client) SendRequestPresentation(
 				WillConfirm: params.WillConfirm,
 			},
 			Attachments: decorator.GenericAttachmentsToV2(params.Attachments),
-		}), connRec.MyDID, connRec.TheirDID)
+		}), service.ConnectionDIDCommContext(connRec, nil))
 	}
 }
 
@@ -175,7 +175,7 @@ func (c *Client) SendProposePresentation(
 			Comment:         params.Comment,
 			Formats:         params.Formats,
 			ProposalsAttach: decorator.GenericAttachmentsToV1(params.Attachments),
-		}), connRec.MyDID, connRec.TheirDID)
+		}), service.ConnectionDIDCommContext(connRec, nil))
 	case service.V2:
 		return c.service.HandleOutbound(service.NewDIDCommMsgMap(&ProposePresentationV3{
 			Type: presentproof.ProposePresentationMsgTypeV3,
@@ -184,7 +184,7 @@ func (c *Client) SendProposePresentation(
 				Comment:  params.Comment,
 			},
 			Attachments: decorator.GenericAttachmentsToV2(params.Attachments),
-		}), connRec.MyDID, connRec.TheirDID)
+		}), service.ConnectionDIDCommContext(connRec, nil))
 	}
 }
 
