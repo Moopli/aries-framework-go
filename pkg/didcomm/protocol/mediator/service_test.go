@@ -7,6 +7,8 @@ SPDX-License-Identifier: Apache-2.0
 package mediator
 
 import (
+	"crypto/ed25519"
+	"crypto/rand"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -23,6 +25,7 @@ import (
 	"github.com/hyperledger/aries-framework-go/pkg/didcomm/transport"
 	"github.com/hyperledger/aries-framework-go/pkg/doc/did"
 	vdrapi "github.com/hyperledger/aries-framework-go/pkg/framework/aries/api/vdr"
+	"github.com/hyperledger/aries-framework-go/pkg/kms"
 	mockdispatcher "github.com/hyperledger/aries-framework-go/pkg/mock/didcomm/dispatcher"
 	mockmessagep "github.com/hyperledger/aries-framework-go/pkg/mock/didcomm/protocol/messagepickup"
 	mockdiddoc "github.com/hyperledger/aries-framework-go/pkg/mock/diddoc"
@@ -259,7 +262,49 @@ func TestServiceRequestMsg(t *testing.T) {
 		require.Equal(t, msgID, id)
 	})
 
-	t.Run("test service handle request msg - success", func(t *testing.T) {
+	t.Run("test service handle inbound request msg - invalid version", func(t *testing.T) {
+		svc, err := New(&mockprovider.Provider{
+			ServiceMap: map[string]interface{}{
+				messagepickup.MessagePickup: &mockmessagep.MockMessagePickupSvc{},
+			},
+			StorageProviderValue:              mockstore.NewMockStoreProvider(),
+			ProtocolStateStorageProviderValue: mockstore.NewMockStoreProvider(),
+			KMSValue:                          &mockkms.KeyManager{},
+			OutboundDispatcherValue:           &mockdispatcher.MockOutbound{},
+		})
+		require.NoError(t, err)
+
+		err = svc.handleInboundRequest(&callback{
+			msg:      generateRequestMsgPayload(t, randomID()),
+			myDID:    MYDID,
+			theirDID: THEIRDID,
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "client requested didcomm v1")
+	})
+
+	t.Run("test service handle inbound request msg - invalid version v2", func(t *testing.T) {
+		svc, err := New(&mockprovider.Provider{
+			ServiceMap: map[string]interface{}{
+				messagepickup.MessagePickup: &mockmessagep.MockMessagePickupSvc{},
+			},
+			StorageProviderValue:              mockstore.NewMockStoreProvider(),
+			ProtocolStateStorageProviderValue: mockstore.NewMockStoreProvider(),
+			KMSValue:                          &mockkms.KeyManager{},
+			OutboundDispatcherValue:           &mockdispatcher.MockOutbound{},
+		})
+		require.NoError(t, err)
+
+		err = svc.handleInboundRequest(&callback{
+			msg:      generateDIDCommV2RequestMsgPayload(t, randomID()),
+			myDID:    MYDID,
+			theirDID: THEIRDID,
+		})
+		require.Error(t, err)
+		require.Contains(t, err.Error(), "client requested didcomm v2")
+	})
+
+	t.Run("test service handle request msg - unmarshal error", func(t *testing.T) {
 		svc, err := New(&mockprovider.Provider{
 			ServiceMap: map[string]interface{}{
 				messagepickup.MessagePickup: &mockmessagep.MockMessagePickupSvc{},
@@ -322,6 +367,53 @@ func TestServiceRequestMsg(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("test service handle request msg - verify outbound message - didcomm v2", func(t *testing.T) {
+		endpoint := "ws://agent.example.com"
+
+		pubKey, _, err := ed25519.GenerateKey(rand.Reader)
+		require.NoError(t, err)
+
+		svc, err := New(&mockprovider.Provider{
+			ServiceMap: map[string]interface{}{
+				messagepickup.MessagePickup: &mockmessagep.MockMessagePickupSvc{},
+			},
+			StorageProviderValue:              mockstore.NewMockStoreProvider(),
+			ProtocolStateStorageProviderValue: mockstore.NewMockStoreProvider(),
+			KMSValue: &mockkms.KeyManager{
+				CrAndExportPubKeyValue: pubKey,
+			},
+			KeyAgreementTypeValue: kms.ED25519Type,
+			ServiceEndpointValue:  endpoint,
+			OutboundDispatcherValue: &mockdispatcher.MockOutbound{
+				ValidateSend: func(msg interface{}, senderVerKey string, des *service.Destination) error {
+					res, err := json.Marshal(msg)
+					require.NoError(t, err)
+
+					grant := &Grant{}
+					err = json.Unmarshal(res, grant)
+					require.NoError(t, err)
+
+					require.Equal(t, endpoint, grant.Endpoint)
+					require.Equal(t, 1, len(grant.RoutingKeys))
+
+					return nil
+				},
+			},
+			MediaTypeProfilesValue: []string{transport.MediaTypeDIDCommV2Profile},
+		})
+		require.NoError(t, err)
+
+		msgID := randomID()
+
+		err = svc.handleInboundRequest(&callback{
+			msg:      generateDIDCommV2RequestMsgPayload(t, msgID),
+			myDID:    MYDID,
+			theirDID: THEIRDID,
+			options:  &Options{},
+		})
+		require.NoError(t, err)
+	})
+
 	t.Run("test service handle request msg - kms failure", func(t *testing.T) {
 		expected := errors.New("test")
 		svc, err := New(&mockprovider.Provider{
@@ -340,6 +432,32 @@ func TestServiceRequestMsg(t *testing.T) {
 
 		err = svc.handleInboundRequest(&callback{
 			msg:      service.NewDIDCommMsgMap(&Request{ID: "test", Type: RequestMsgType}),
+			myDID:    MYDID,
+			theirDID: THEIRDID,
+			options:  &Options{},
+		})
+		require.Error(t, err)
+		require.True(t, errors.Is(err, expected))
+	})
+
+	t.Run("test service handle request msg - kms failure - didcomm v2", func(t *testing.T) {
+		expected := errors.New("test")
+		svc, err := New(&mockprovider.Provider{
+			ServiceMap: map[string]interface{}{
+				messagepickup.MessagePickup: &mockmessagep.MockMessagePickupSvc{},
+			},
+			StorageProviderValue:              mockstore.NewMockStoreProvider(),
+			ProtocolStateStorageProviderValue: mockstore.NewMockStoreProvider(),
+			KMSValue: &mockkms.KeyManager{
+				CrAndExportPubKeyErr: expected,
+			},
+			OutboundDispatcherValue: &mockdispatcher.MockOutbound{},
+			MediaTypeProfilesValue:  []string{transport.MediaTypeDIDCommV2Profile},
+		})
+		require.NoError(t, err)
+
+		err = svc.handleInboundRequest(&callback{
+			msg:      generateDIDCommV2RequestMsgPayload(t, "test"),
 			myDID:    MYDID,
 			theirDID: THEIRDID,
 			options:  &Options{},
@@ -1014,7 +1132,7 @@ func TestRegister(t *testing.T) {
 		require.NoError(t, err)
 
 		connRec := &connection.Record{
-			ConnectionID: "conn2", MyDID: MYDID, TheirDID: THEIRDID, State: "complete",
+			ConnectionID: "conn2", MyDID: MYDID, TheirDID: THEIRDID, State: "complete", DIDCommVersion: service.V2,
 		}
 		connBytes, err := json.Marshal(connRec)
 		require.NoError(t, err)
@@ -1544,6 +1662,20 @@ func generateRequestMsgPayload(t *testing.T, id string) service.DIDCommMsg {
 	requestBytes, err := json.Marshal(&Request{
 		Type: RequestMsgType,
 		ID:   id,
+	})
+	require.NoError(t, err)
+
+	didMsg, err := service.ParseDIDCommMsgMap(requestBytes)
+	require.NoError(t, err)
+
+	return didMsg
+}
+
+func generateDIDCommV2RequestMsgPayload(t *testing.T, id string) service.DIDCommMsg {
+	requestBytes, err := json.Marshal(&Request{
+		Type:      RequestMsgType,
+		ID:        id,
+		DIDCommV2: true,
 	})
 	require.NoError(t, err)
 
