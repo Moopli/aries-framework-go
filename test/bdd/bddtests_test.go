@@ -17,6 +17,8 @@ import (
 
 	"github.com/cucumber/godog"
 
+	"github.com/hyperledger/aries-framework-go/test/bdd/pkg/wallet"
+
 	"github.com/hyperledger/aries-framework-go/pkg/common/log"
 	"github.com/hyperledger/aries-framework-go/test/bdd/agent"
 	"github.com/hyperledger/aries-framework-go/test/bdd/dockerutil"
@@ -215,5 +217,6 @@ func features() []feature {
 		webkms.NewCryptoSDKSteps(),
 		waci.NewIssuanceDIDCommV1SDKSteps(),
 		waci.NewIssuanceDIDCommV2SDKSteps(),
+		wallet.NewWalletSDKSteps(),
 	}
 }
