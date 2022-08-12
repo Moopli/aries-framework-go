@@ -82,7 +82,15 @@ func New(ctx Provider) (*Packager, error) {
 }
 
 func (bp *Packager) addPacker(pack packer.Packer) {
-	packerID := pack.EncodingType()
+	id := packerName(pack)
+
+	if bp.packers[id] == nil {
+		bp.packers[id] = pack
+	}
+}
+
+func packerName(pack packer.Packer) string {
+	id := pack.EncodingType()
 
 	_, isAuthCrypt := pack.(*authcrypt.Packer)
 	_, isLegacyAuthCrypt := pack.(*legacyAuthCrypt.Packer)
@@ -90,12 +98,10 @@ func (bp *Packager) addPacker(pack packer.Packer) {
 	if isAuthCrypt || isLegacyAuthCrypt {
 		// anoncrypt and authcrypt have the same encoding type
 		// so authcrypt will have an appended suffix
-		packerID += authSuffix
+		id += authSuffix
 	}
 
-	if bp.packers[packerID] == nil {
-		bp.packers[packerID] = pack
-	}
+	return id
 }
 
 // PackMessage Pack a message for one or more recipients.
@@ -104,10 +110,17 @@ func (bp *Packager) PackMessage(messageEnvelope *transport.Envelope) ([]byte, er
 		return nil, errors.New("packMessage: envelope argument is nil")
 	}
 
+	logger.Warnf("Packager.PackMessage for envelope:\n"+
+		"\tMessage: %s\n"+
+		"\tMTP: %s\n"+
+		"\tToKeys: %#v", string(messageEnvelope.Message), messageEnvelope.MediaTypeProfile, messageEnvelope.ToKeys)
+
 	cty, p, err := bp.getCTYAndPacker(messageEnvelope)
 	if err != nil {
 		return nil, fmt.Errorf("packMessage: %w", err)
 	}
+
+	logger.Warnf("selected Packer %s for packing message", packerName(p))
 
 	senderKey, recipients, err := bp.prepareSenderAndRecipientKeys(cty, messageEnvelope)
 	if err != nil {
@@ -373,6 +386,8 @@ func (bp *Packager) UnpackMessage(encMessage []byte) (*transport.Envelope, error
 	if !ok {
 		return nil, fmt.Errorf("message Type not recognized")
 	}
+
+	logger.Warnf("selected Packer %s for unpacking message", packerName(p))
 
 	if len(b64DecodedMessage) > 0 {
 		encMessage = b64DecodedMessage
