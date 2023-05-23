@@ -20,7 +20,7 @@ jobs:
     steps:
 
     - name: Setup Go 1.19
-      uses: actions/setup-go@v2
+      uses: actions/setup-go@v4
       with:
         go-version: 1.19
       id: go
@@ -50,7 +50,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - name: Setup Go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
         id: go
@@ -68,7 +68,7 @@ jobs:
     steps:
 
       - name: Setup Go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
         id: go
@@ -86,7 +86,7 @@ jobs:
     steps:
 
       - name: Setup Go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
         id: go
@@ -104,7 +104,7 @@ jobs:
     steps:
 
       - name: Setup Go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
         id: go
@@ -143,7 +143,7 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - name: Setup Go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
 
@@ -177,7 +177,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - name: Setup Go 1.19
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v4
         with:
           go-version: 1.19
         id: go
